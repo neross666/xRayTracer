@@ -1,0 +1,31 @@
+cmake_minimum_required(VERSION 3.20)
+
+
+project(Solution 
+	LANGUAGES CXX	
+	VERSION 1.0.0)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+
+find_package(spdlog REQUIRED)
+find_package(OpenCV REQUIRED)
+
+
+
+add_executable(xRayTracer
+	"main.cpp"
+ "geometry.h" "camera.h" "ray.h" "sampler.h" "integrator.h" "image.h" "scene.h")
+
+ target_include_directories(xRayTracer
+PRIVATE
+	${OpenCV_INCLUDE_LIBS}
+	)
+ 
+target_link_libraries(xRayTracer 
+PRIVATE 
+	spdlog::spdlog
+	${OpenCV_LIBS}
+	)
