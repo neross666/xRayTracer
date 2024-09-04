@@ -2,10 +2,32 @@
 #include "image.h"
 #include "integrator.h"
 
+#include <vtkSmartPointer.h>
+#include <vtkSphereSource.h>
+#include <vtkOBJWriter.h>
+#include <vtkPolyData.h>
 
+void makeSpere()
+{
+	vtkSmartPointer<vtkSphereSource> sphereSource = vtkSmartPointer<vtkSphereSource>::New();
+	sphereSource->SetCenter(0.0, 0.0, 0.0); 
+	sphereSource->SetRadius(1.0);
+	sphereSource->SetThetaResolution(8);
+	sphereSource->SetPhiResolution(8);
+	sphereSource->Update(); 
+
+	vtkSmartPointer<vtkOBJWriter> objWriter = vtkSmartPointer<vtkOBJWriter>::New();
+	std::string filename = DATA_DIR;
+	objWriter->SetFileName((filename + "sphere.obj").c_str());
+	objWriter->SetInputData(sphereSource->GetOutput());
+	objWriter->Write();
+}
 
 int main(int argc, char** argv)
 {
+	//makeSpere();
+
+
 	const uint32_t width = 512;
 	const uint32_t height = 512;
 	const uint32_t n_samples = 1;
@@ -13,16 +35,17 @@ int main(int argc, char** argv)
 
 	Image image(width, height);
 
-	const Vec3f camera_pos = Vec3f(0, 0, 0);
+	const Vec3f camera_pos = Vec3f(0, 0, 2.0);
 	const Vec3f camera_forward = Vec3f(0, 0, -1);
-	const float FOV = 0.25 * PI;
+	const float FOV = 0.5 * PI;
 
 	const auto camera =
 		std::make_shared<PinholeCamera>(camera_pos, camera_forward, FOV);
 
 	// build scene
 	Scene scene;
-	//scene.loadObj("CornellBox-Mist.obj");
+	std::string dataDir = DATA_DIR;
+	scene.loadObj(dataDir + "sphere.obj");
 	//scene.build();
 
 	// render

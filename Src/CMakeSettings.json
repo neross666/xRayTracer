@@ -11,7 +11,7 @@
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "cmakeExecutable": "C:\\Program Files\\CMake\\bin\\cmake.exe",
-      "cmakeToolchain": "C:\\Src\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake"
+      "cmakeToolchain": "D:\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake"
     }
   ]
 }

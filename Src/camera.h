@@ -16,8 +16,8 @@ public:
 	Camera(const Vec3f& position, const Vec3f& forward)
 		: position(position), forward(forward)
 	{
-		right = forward.crossProduct(Vec3f(0, 1, 0)).normalize();		
-		up = right.crossProduct(forward).normalize();
+		right = normalize(cross(forward, Vec3f(0, 1, 0)));
+		up = normalize(cross(right, forward));
 
 		spdlog::info("[Camera] position: ({}, {}, {})", position[0], position[1],
 			position[2]);
@@ -54,8 +54,8 @@ public:
 		float& pdf) const override
 	{
 		const Vec3f pinholePos = position + focalLength * forward;
-		const Vec3f sensorPos = pinholePos + uv.x * right + uv.y * up;
-		ray = Ray(sensorPos, (sensorPos - pinholePos).normalize());
+		const Vec3f sensorPos = pinholePos + uv[0] * right + uv[1] * up;
+		ray = Ray(sensorPos, normalize(sensorPos - position));
 		pdf = 1.0f;
 
 

@@ -1,40 +1,8 @@
-//[header]
-// This program illustrates how the concept of vector and matrix can be implemented
-// in C++. This is a light version of the implementation. It contains the most
-// essential methods to manipulate vectors and matrices. It should be enough
-// for most projects. Vectors and matrices are really the alphabet as we said
-// in the lesson of any graphics application. It's really important you feel
-// confortable with these techniques especially with the concepts of
-// normalizing vectors, computing their length, computing the dot and cross products
-// of two vectors, and the point- and vector-matrix multiplication (and knowing
-// the difference between the two).
-//[/header]
-//[compile]
-// c++ geometry.cpp  -o geometry -std=c++11
-//[/compile]
-//[ignore]
-// Copyright (C) 2012  www.scratchapixel.com
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-//[/ignore]
 #pragma once
 
-#include <cstdlib>
-#include <cstdio>
-#include <iostream>
-#include <iomanip>
 #include <cmath>
+#include <iostream>
+#include <limits>
 
 constexpr float PI = 3.14159265359;
 
@@ -54,164 +22,240 @@ constexpr float RAY_EPS = 1e-3f;
 inline float rad2deg(float rad) { return 180.0f * rad / PI; }
 inline float deg2rad(float deg) { return deg / 180.0f * PI; }
 
+template <typename T>
+struct Vec2 {
+	T v[2];
 
+	Vec2() { v[0] = v[1] = 0; }
+	Vec2(T x) { v[0] = v[1] = x; }
+	Vec2(T x, T y)
+	{
+		v[0] = x;
+		v[1] = y;
+	}
 
-template<typename T>
-class Vec2
-{
-public:
-	Vec2() : x(0), y(0) {}
-	Vec2(T xx) : x(xx), y(xx) {}
-	Vec2(T xx, T yy) : x(xx), y(yy) {}
-	Vec2 operator + (const Vec2& v) const
+	T x() const { return v[0]; }
+	T& x() { return v[0]; }
+
+	T y() const { return v[1]; }
+	T& y() { return v[1]; }
+
+	T operator[](int i) const { return v[i]; }
+	T& operator[](int i) { return v[i]; }
+
+	Vec2 operator-() const { return Vec2(-v[0], -v[1]); }
+
+	Vec2& operator+=(const Vec2& v)
 	{
-		return Vec2(x + v.x, y + v.y);
+		for (int i = 0; i < 2; ++i) { this->v[i] += v[i]; }
+		return *this;
 	}
-	Vec2 operator / (const T& r) const
+	Vec2& operator*=(const Vec2& v)
 	{
-		return Vec2(x / r, y / r);
+		for (int i = 0; i < 2; ++i) { this->v[i] *= v[i]; }
+		return *this;
 	}
-	Vec2 operator * (const T& r) const
+	Vec2& operator/=(const Vec2& v)
 	{
-		return Vec2(x * r, y * r);
+		for (int i = 0; i < 2; ++i) { this->v[i] /= v[i]; }
+		return *this;
 	}
-	Vec2& operator /= (const T& r)
-	{
-		x /= r, y /= r; return *this;
-	}
-	Vec2& operator *= (const T& r)
-	{
-		x *= r, y *= r; return *this;
-	}
-	friend std::ostream& operator << (std::ostream& s, const Vec2<T>& v)
-	{
-		return s << '[' << v.x << ' ' << v.y << ']';
-	}
-	friend Vec2 operator * (const T& r, const Vec2<T>& v)
-	{
-		return Vec2(v.x * r, v.y * r);
-	}
-	T x, y;
 };
 
-typedef Vec2<float> Vec2f;
-typedef Vec2<int> Vec2i;
-
-//[comment]
-// Implementation of a generic vector class - it will be used to deal with 3D points, vectors and normals.
-// The class is implemented as a template. While it may complicate the code a bit, it gives us
-// the flexibility later, to specialize the type of the coordinates into anything we want.
-// For example: Vec3f if we want the coordinates to be floats or Vec3i if we want the coordinates to be integers.
-//
-// Vec3 is a standard/common way of naming vectors, points, etc. The OpenEXR and Autodesk libraries
-// use this convention for instance.
-//[/comment]
-template<typename T>
-class Vec3
+template <typename T>
+inline Vec2<T> operator+(const Vec2<T>& v1, const Vec2<T>& v2)
 {
-public:
-	Vec3() : x(T(0)), y(T(0)), z(T(0)) {}
-	Vec3(T xx) : x(xx), y(xx), z(xx) {}
-	Vec3(T xx, T yy, T zz) : x(xx), y(yy), z(zz) {}
-	Vec3 operator + (const Vec3& v) const
-	{
-		return Vec3(x + v.x, y + v.y, z + v.z);
-	}
-	Vec3 operator - (const Vec3& v) const
-	{
-		return Vec3(x - v.x, y - v.y, z - v.z);
-	}
-	Vec3 operator - () const
-	{
-		return Vec3(-x, -y, -z);
-	}
-	Vec3 operator * (const T& r) const
-	{
-		return Vec3(x * r, y * r, z * r);
-	}
-	Vec3 operator * (const Vec3& v) const
-	{
-		return Vec3(x * v.x, y * v.y, z * v.z);
-	}
-	Vec3 operator / (const Vec3& v) const
-	{
-		return Vec3<T>(x / v.x, y / v.y, z / v.z);
-	}
-	T dotProduct(const Vec3<T>& v) const
-	{
-		return x * v.x + y * v.y + z * v.z;
-	}
-	Vec3& operator /= (const T& r)
-	{
-		x /= r, y /= r, z /= r; return *this;
-	}
-	Vec3& operator *= (const T& r)
-	{
-		x *= r, y *= r, z *= r; return *this;
-	}
-	Vec3 operator / (const T& r)
-	{
-		return Vec3<T>(x / r, y / r, z / r);
-	}
-	Vec3 operator * (const T& r)
-	{
-		return Vec3<T>(x * r, y * r, z * r);
-	}
-	Vec3 crossProduct(const Vec3<T>& v) const
-	{
-		return Vec3<T>(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x);
-	}
-	T norm() const
-	{
-		return x * x + y * y + z * z;
-	}
-	T length() const
-	{
-		return sqrt(norm());
-	}
-	//[comment]
-	// The next two operators are sometimes called access operators or
-	// accessors. The Vec coordinates can be accessed that way v[0], v[1], v[2],
-	// rather than using the more traditional form v.x, v.y, v.z. This useful
-	// when vectors are used in loops: the coordinates can be accessed with the
-	// loop index (e.g. v[i]).
-	//[/comment]
-	const T& operator [] (uint8_t i) const { return (&x)[i]; }
-	T& operator [] (uint8_t i) { return (&x)[i]; }
-	Vec3& normalize()
-	{
-		T n = norm();
-		if (n > 0) {
-			T factor = 1 / sqrt(n);
-			x *= factor, y *= factor, z *= factor;
-		}
+	return Vec2<T>(v1[0] + v2[0], v1[1] + v2[1]);
+}
+template <typename T>
+inline Vec2<T> operator+(const Vec2<T>& v1, float k)
+{
+	return Vec2<T>(v1[0] + k, v1[1] + k);
+}
+template <typename T>
+inline Vec2<T> operator+(float k, const Vec2<T>& v2)
+{
+	return v2 + k;
+}
 
+template <typename T>
+inline Vec2<T> operator-(const Vec2<T>& v1, const Vec2<T>& v2)
+{
+	return Vec2<T>(v1[0] - v2[0], v1[1] - v2[1]);
+}
+template <typename T>
+inline Vec2<T> operator-(const Vec2<T>& v1, float k)
+{
+	return Vec2<T>(v1[0] - k, v1[1] - k);
+}
+template <typename T>
+inline Vec2<T> operator-(float k, const Vec2<T>& v2)
+{
+	return Vec2<T>(k - v2[0], k - v2[1]);
+}
+
+template <typename T>
+inline Vec2<T> operator*(const Vec2<T>& v1, const Vec2<T>& v2)
+{
+	return Vec2<T>(v1[0] * v2[0], v1[1] * v2[1]);
+}
+template <typename T>
+inline Vec2<T> operator*(const Vec2<T>& v1, float k)
+{
+	return Vec2<T>(v1[0] * k, v1[1] * k);
+}
+template <typename T>
+inline Vec2<T> operator*(float k, const Vec2<T>& v2)
+{
+	return v2 * k;
+}
+
+template <typename T>
+inline Vec2<T> operator/(const Vec2<T>& v1, const Vec2<T>& v2)
+{
+	return Vec2<T>(v1[0] / v2[0], v1[1] / v2[1]);
+}
+template <typename T>
+inline Vec2<T> operator/(const Vec2<T>& v1, float k)
+{
+	return Vec2<T>(v1[0] / k, v1[1] / k);
+}
+template <typename T>
+inline Vec2<T> operator/(float k, const Vec2<T>& v2)
+{
+	return Vec2<T>(k / v2[0], k / v2[1]);
+}
+
+using Vec2f = Vec2<float>;
+
+template <typename T>
+struct Vec3 {
+	T v[3];
+
+	// implement Point
+	static constexpr int dim = 3;
+
+	Vec3() { v[0] = v[1] = v[2] = 0; }
+	Vec3(T x) { v[0] = v[1] = v[2] = x; }
+	Vec3(T x, T y, T z)
+	{
+		v[0] = x;
+		v[1] = y;
+		v[2] = z;
+	}
+
+	T operator[](int i) const { return v[i]; }
+	T& operator[](int i) { return v[i]; }
+
+	Vec3 operator-() const { return Vec3(-v[0], -v[1], -v[2]); }
+
+	Vec3& operator+=(const Vec3& v)
+	{
+		for (int i = 0; i < 3; ++i) { this->v[i] += v[i]; }
+		return *this;
+	}
+	Vec3& operator*=(const Vec3& v)
+	{
+		for (int i = 0; i < 3; ++i) { this->v[i] *= v[i]; }
+		return *this;
+	}
+	Vec3& operator/=(const Vec3& v)
+	{
+		for (int i = 0; i < 3; ++i) { this->v[i] /= v[i]; }
 		return *this;
 	}
 
-	friend Vec3 operator * (const T& r, const Vec3& v)
-	{
-		return Vec3<T>(v.x * r, v.y * r, v.z * r);
-	}
-	friend Vec3 operator / (const T& r, const Vec3& v)
-	{
-		return Vec3<T>(r / v.x, r / v.y, r / v.z);
-	}
-
-	friend std::ostream& operator << (std::ostream& s, const Vec3<T>& v)
-	{
-		return s << '[' << v.x << ' ' << v.y << ' ' << v.z << ']';
-	}
-
-	T x, y, z;
+	const T* getPtr() const { return &v[0]; }
 };
 
-//[comment]
-// Now you can specialize the class. We are just showing two examples here. In your code
-// you can declare a vector either that way: Vec3<float> a, or that way: Vec3f a
-//[/comment]
-typedef Vec3<float> Vec3f;
-typedef Vec3<int> Vec3i;
+template <typename T>
+inline Vec3<T> operator+(const Vec3<T>& v1, const Vec3<T>& v2)
+{
+	return Vec3<T>(v1[0] + v2[0], v1[1] + v2[1], v1[2] + v2[2]);
+}
+template <typename T>
+inline Vec3<T> operator+(const Vec3<T>& v1, float k)
+{
+	return Vec3<T>(v1[0] + k, v1[1] + k, v1[2] + k);
+}
+template <typename T>
+inline Vec3<T> operator+(float k, const Vec3<T>& v2)
+{
+	return v2 + k;
+}
+
+template <typename T>
+inline Vec3<T> operator-(const Vec3<T>& v1, const Vec3<T>& v2)
+{
+	return Vec3<T>(v1[0] - v2[0], v1[1] - v2[1], v1[2] - v2[2]);
+}
+template <typename T>
+inline Vec3<T> operator-(const Vec3<T>& v1, float k)
+{
+	return Vec3<T>(v1[0] - k, v1[1] - k, v1[2] - k);
+}
+template <typename T>
+inline Vec3<T> operator-(float k, const Vec3<T>& v2)
+{
+	return Vec3<T>(k - v2[0], k - v2[1], k - v2[2]);
+}
+
+template <typename T>
+inline Vec3<T> operator*(const Vec3<T>& v1, const Vec3<T>& v2)
+{
+	return Vec3<T>(v1[0] * v2[0], v1[1] * v2[1], v1[2] * v2[2]);
+}
+template <typename T>
+inline Vec3<T> operator*(const Vec3<T>& v1, float k)
+{
+	return Vec3<T>(v1[0] * k, v1[1] * k, v1[2] * k);
+}
+template <typename T>
+inline Vec3<T> operator*(float k, const Vec3<T>& v2)
+{
+	return v2 * k;
+}
+
+template <typename T>
+inline Vec3<T> operator/(const Vec3<T>& v1, const Vec3<T>& v2)
+{
+	return Vec3<T>(v1[0] / v2[0], v1[1] / v2[1], v1[2] / v2[2]);
+}
+template <typename T>
+inline Vec3<T> operator/(const Vec3<T>& v1, float k)
+{
+	return Vec3<T>(v1[0] / k, v1[1] / k, v1[2] / k);
+}
+template <typename T>
+inline Vec3<T> operator/(float k, const Vec3<T>& v2)
+{
+	return Vec3<T>(k / v2[0], k / v2[1], k / v2[2]);
+}
+
+template <typename T>
+inline T dot(const Vec3<T>& v1, const Vec3<T>& v2)
+{
+	return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
+}
+
+template <typename T>
+inline Vec3<T> cross(const Vec3<T>& v1, const Vec3<T>& v2)
+{
+	return Vec3<T>(v1[1] * v2[2] - v1[2] * v2[1], v1[2] * v2[0] - v1[0] * v2[2],
+		v1[0] * v2[1] - v1[1] * v2[0]);
+}
+
+using Vec3f = Vec3<float>;
+using Vec3ui = Vec3<uint32_t>;
+
+inline float length(const Vec3f& v) { return std::sqrt(dot(v, v)); }
+inline float length2(const Vec3f& v) { return dot(v, v); }
+inline Vec3f normalize(const Vec3f& v) { return v / length(v); }
+
+inline Vec3f exp(const Vec3f& v)
+{
+	return Vec3f(std::exp(v[0]), std::exp(v[1]), std::exp(v[2]));
+}
 
 //[comment]
 // Implementation of a generic 4x4 Matrix class - Same thing here than with the Vec3 class. It uses

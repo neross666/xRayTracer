@@ -24,14 +24,15 @@ public:
 	Vec3f integrate(const Ray& ray_in, const Scene& scene,
 		Sampler& sampler) const
 	{
-// 		IntersectInfo info;
-// 		if (scene.intersect(ray_in, info)) {
-// 			return 0.5f * (info.surfaceInfo.ns + 1.0f);
-// 		}
-// 		else {
-// 			return Vec3f(0);
-// 		}
-		return Vec3f(1.0, 1.0, 0.0);
+ 		IntersectInfo info;
+ 		if (scene.intersect(ray_in, info)) {
+ 			return 0.5f * (info.surfaceInfo.ns + 1.0f);
+			//return Vec3f(1.0, 1.0, 0.0);
+ 		}
+ 		else {
+ 			return Vec3f(0);
+ 		}
+//		return Vec3f(1.0, 1.0, 0.0);
 	};
 
 	void render(const Scene& scene, Sampler& sampler, Image& image)
