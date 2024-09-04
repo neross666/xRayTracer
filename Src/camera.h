@@ -27,6 +27,11 @@ public:
 		spdlog::info("[Camera] up: ({}, {}, {})", up[0], up[1], up[2]);
 	}
 
+	void setTransform(const Matrix44f& mat) {
+		mat.multVecMatrix(position, position);
+		mat.multDirMatrix(forward, forward);
+	}
+
 	// sample ray emitting from the given sensor coordinate
 	// NOTE: uv: [-aspectRatio, -1] x [aspectRatio, 1], sensor coordinate
 	virtual bool sampleRay(const Vec2f& uv, Sampler& sampler, Ray& ray,
@@ -57,7 +62,6 @@ public:
 		const Vec3f sensorPos = pinholePos + uv[0] * right + uv[1] * up;
 		ray = Ray(sensorPos, normalize(sensorPos - position));
 		pdf = 1.0f;
-
 
 		return true;
 	}

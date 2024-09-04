@@ -35,8 +35,8 @@ int main(int argc, char** argv)
 
 	Image image(width, height);
 
-	const Vec3f camera_pos = Vec3f(0, 0, 2.0);
-	const Vec3f camera_forward = Vec3f(0, 0, -1);
+	const Vec3f camera_pos = Vec3f(260, 260, -500.0);
+	const Vec3f camera_forward = Vec3f(0, 0, 1);
 	const float FOV = 0.5 * PI;
 
 	const auto camera =
@@ -45,12 +45,13 @@ int main(int argc, char** argv)
 	// build scene
 	Scene scene;
 	std::string dataDir = DATA_DIR;
-	scene.loadObj(dataDir + "sphere.obj");
+	scene.loadObj(dataDir + "cornell_box.obj");
 	//scene.build();
 
 	// render
 	UniformSampler sampler;
-	PathIntegrator integrator(camera, n_samples, max_depth);
+	//NormalIntegrator integrator(camera);
+	PathTracing integrator(camera, 100, 10);
 	integrator.render(scene, sampler, image);
 
 	// gamma correction

@@ -15,25 +15,14 @@ private:
 	const std::shared_ptr<Camera> camera;
 
 public:
-	PathIntegrator(const std::shared_ptr<Camera>& camera, uint32_t n_samples, uint32_t n_depth)
+	PathIntegrator(const std::shared_ptr<Camera>& camera, uint32_t n_samples)
 		: camera(camera), n_samples(n_samples)
 	{
 	}
 
 	// compute radiance coming from the given ray
-	Vec3f integrate(const Ray& ray_in, const Scene& scene,
-		Sampler& sampler) const
-	{
- 		IntersectInfo info;
- 		if (scene.intersect(ray_in, info)) {
- 			return 0.5f * (info.surfaceInfo.ns + 1.0f);
-			//return Vec3f(1.0, 1.0, 0.0);
- 		}
- 		else {
- 			return Vec3f(0);
- 		}
-//		return Vec3f(1.0, 1.0, 0.0);
-	};
+	virtual Vec3f integrate(const Ray& ray, const Scene& scene,
+		Sampler& sampler) const = 0;
 
 	void render(const Scene& scene, Sampler& sampler, Image& image)
 	{
@@ -42,8 +31,8 @@ public:
 
 		spdlog::info("[PathIntegrator] rendering...");
 #pragma omp parallel for collapse(2) schedule(dynamic, 1)
-		for (int i = 0; i < height; ++i) {
-			for (int j = 0; j < width; ++j) {
+		for (uint32_t i = 0; i < height; ++i) {
+			for (uint32_t j = 0; j < width; ++j) {
 				// init sampler for each pixel
 				const std::unique_ptr<Sampler> sampler_per_pixel = sampler.clone();
 				sampler_per_pixel->setSeed((sampler.getSeed() + 1) * (j + width * i));
@@ -100,3 +89,72 @@ public:
 	}
 };
 
+class NormalIntegrator : public PathIntegrator
+{
+public:
+	NormalIntegrator(const std::shared_ptr<Camera>& camera)
+		: PathIntegrator(camera, 1) {
+	}
+	virtual ~NormalIntegrator() = default;
+
+
+	Vec3f integrate(const Ray& ray_in, const Scene& scene,
+		Sampler& sampler) const override
+	{
+		IntersectInfo info;
+		if (scene.intersect(ray_in, info)) {
+			return 0.5f * (info.surfaceInfo.ns + 1.0f);
+		}
+		else {
+			return Vec3f(0);
+		}
+	};
+
+private:
+
+};
+
+class PathTracing : public PathIntegrator
+{
+public:
+	PathTracing(const std::shared_ptr<Camera>& camera, uint32_t n_samples,
+	uint32_t maxDepth = 100)
+	: PathIntegrator(camera, n_samples), m_maxDepth(maxDepth){
+	}
+	virtual ~PathTracing() = default;
+
+	Vec3f integrate(const Ray& ray_in, const Scene& scene,
+		Sampler& sampler) const override
+	{
+		Vec3f radiance(0);
+		Ray ray = ray_in;
+		ray.throughput = Vec3f(1, 1, 1);
+
+		uint32_t depth = 0;
+		while (depth < m_maxDepth) 
+		{
+			IntersectInfo info;
+			if (scene.intersect(ray, info))
+			{
+				// russian roulette
+				if (depth > 0) {
+					const float russian_roulette_prob = std::min(
+						(ray.throughput[0] + ray.throughput[1] + ray.throughput[2]) /
+						3.0f,
+						1.0f);
+					if (sampler.getNext1D() >= russian_roulette_prob) { break; }
+					ray.throughput /= russian_roulette_prob;
+				}
+
+				// ignore medium
+			}
+		}
+
+
+		return radiance;
+	}
+
+private:
+	const uint32_t m_maxDepth;
+
+};
