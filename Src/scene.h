@@ -93,10 +93,16 @@ public:
                 this->m_normals.insert(m_normals.end(), normals.begin(), normals.end());
                 this->m_texcoords.insert(m_texcoords.end(), texcoords.begin(), texcoords.end());                
 
-                index_offset += fv;
+                // material ID of current face
+                const int materialID = shapes[s].mesh.material_ids[f];
+                std::optional<tinyobj::material_t> material = std::nullopt;
+                if (materialID != -1) 
+                    material = materials[materialID];
+                const uint32_t faceID = this->m_vertices.size() / 3 - 1;
+                //this->materials.emplace(faceID, material);
 
-                // per-face material
-                //shapes[s].mesh.material_ids[f];
+
+                index_offset += fv;
             }
         }
 
@@ -125,6 +131,8 @@ public:
                     info.surfaceInfo.texcoords = m_texcoords[i] * (1.0f - u - v) + m_texcoords[i + 1] * u + m_texcoords[i + 2] * v;
                     info.surfaceInfo.ng = normalize(cross(m_vertices[i + 1] - m_vertices[i], m_vertices[i + 2] - m_vertices[i]));
                     info.surfaceInfo.ns = m_normals[i] * (1.0f - u - v) + m_normals[i + 1] * u + m_normals[i + 2] * v;
+                    orthonormalBasis(info.surfaceInfo.ns, info.surfaceInfo.dpdu,
+                        info.surfaceInfo.dpdv);
                 }
             }
         }

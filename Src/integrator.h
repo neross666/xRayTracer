@@ -103,7 +103,10 @@ public:
 	{
 		IntersectInfo info;
 		if (scene.intersect(ray_in, info)) {
-			return 0.5f * (info.surfaceInfo.ns + 1.0f);
+			//return 0.5f * (info.surfaceInfo.ns + 1.0f);
+
+			auto faceRatio = std::max(0.f, dot(info.surfaceInfo.ns, -ray_in.direction));
+			return Vec3f(faceRatio);
 		}
 		else {
 			return Vec3f(0);
@@ -134,20 +137,29 @@ public:
 		while (depth < m_maxDepth) 
 		{
 			IntersectInfo info;
-			if (scene.intersect(ray, info))
-			{
-				// russian roulette
-				if (depth > 0) {
-					const float russian_roulette_prob = std::min(
-						(ray.throughput[0] + ray.throughput[1] + ray.throughput[2]) /
-						3.0f,
-						1.0f);
-					if (sampler.getNext1D() >= russian_roulette_prob) { break; }
-					ray.throughput /= russian_roulette_prob;
-				}
-
-				// ignore medium
+			if (!scene.intersect(ray, info))
+				break;
+				
+			// russian roulette
+			if (depth > 0) {
+				const float russian_roulette_prob = std::min(
+					(ray.throughput[0] + ray.throughput[1] + ray.throughput[2]) /
+					3.0f,
+					1.0f);
+				if (sampler.getNext1D() >= russian_roulette_prob) { break; }
+				ray.throughput /= russian_roulette_prob;
 			}
+
+			// ignore medium for now
+
+
+			// Le
+			//if (info.hitPrimitive->hasAreaLight()) {
+			//	radiance += ray.throughput *
+			//		info.hitPrimitive->Le(info.surfaceInfo, -ray.direction);
+			//	break;
+			//}
+			
 		}
 
 
