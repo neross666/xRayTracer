@@ -57,7 +57,7 @@ int main(int argc, char** argv)
 	std::string dataDir = DATA_DIR;
 	scene.loadObj(dataDir + "sphere8.obj");
 	scene.makeDeltaLight();
-	//scene.build();
+	scene.build();
 
 	// render
 	UniformSampler sampler;

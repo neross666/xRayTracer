@@ -4,6 +4,7 @@
 #include <tiny_obj_loader.h>
 #include "geometry.h"
 #include "light.h"
+#include "primitive.h"
 
 class Scene
 {
@@ -102,7 +103,9 @@ public:
                 if (materialID != -1) 
                     material = materials[materialID];
                 const uint32_t faceID = this->m_vertices.size() / 3 - 1;
-                //this->materials.emplace(faceID, material);
+                //this->m_materials.emplace(faceID, material);
+
+                m_primitives.push_back(Primitive(materialID));
 
 
                 index_offset += fv;
@@ -111,6 +114,9 @@ public:
 
 	}
 
+    void build() {
+
+    }
 
     void makeDeltaLight() {
         
@@ -204,6 +210,12 @@ private:
     std::vector<Vec3f> m_vertices;
     std::vector<Vec3f> m_normals;
     std::vector<Vec2f> m_texcoords;
+
+    // save all material type
+    std::unordered_map<uint32_t, std::optional<tinyobj::material_t>> m_materials;
+
+    // need point a material_t obj
+    std::vector<Primitive> m_primitives;
 
     std::vector<std::shared_ptr<Light>> m_deltaLights;
 };

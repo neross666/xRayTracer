@@ -629,3 +629,9 @@ inline void orthonormalBasis(const Vec3f& n, Vec3f& t, Vec3f& b)
 	}
 	b = normalize(cross(t, n));
 }
+
+
+inline Vec3f reflect(const Vec3f& I, const Vec3f& N)
+{
+	return I - 2 * dot(I, N) * N;
+}

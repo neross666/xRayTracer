@@ -103,6 +103,8 @@ public:
 	Vec3f integrate(const Ray& ray_in, const Scene& scene,
 		Sampler& sampler) const override
 	{
+		Vec3f radiance(0);
+
 		IntersectInfo info;
 		if (scene.intersect(ray_in, info)) {
 			//return 0.5f * (info.surfaceInfo.ns + 1.0f);
@@ -111,7 +113,6 @@ public:
 			//return Vec3f(faceRatio);				
 
 			// diffuse
-			Vec3f hitColor = Vec3f(0.0f);
 			for (const auto& light : scene.getDeltaLights())
 			{
 				Vec3f lightDir, lightIntensity;
@@ -119,18 +120,64 @@ public:
 				light->illuminate(info.surfaceInfo.position, lightDir, lightIntensity, sinfo.t);
 				bool vis = !scene.intersect(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * 0.1, -lightDir), sinfo);
 				// compute the color of a diffuse surface illuminated
-				hitColor += vis * Vec3f(1.0f, 1.0f, 1.0f) / PI * lightIntensity * std::max(0.f, dot(info.surfaceInfo.ns, -lightDir));				
-			}	
-			return hitColor;
+				radiance += vis * Vec3f(1.0f, 1.0f, 1.0f) / PI * lightIntensity * std::max(0.f, dot(info.surfaceInfo.ns, -lightDir));
+			}
 		}
-		else {
-			return Vec3f(0);
-		}
+
+		return radiance;
 	};
 
 private:
 
 };
+
+class XIntegrator : public PathIntegrator
+{
+public:
+	XIntegrator(const std::shared_ptr<Camera>& camera, uint32_t maxDepth = 100)
+		: PathIntegrator(camera, 1), m_maxDepth(maxDepth) {
+	}
+	virtual ~XIntegrator() = default;
+
+
+	Vec3f integrate(const Ray& ray_in, const Scene& scene,
+		Sampler& sampler) const override
+	{
+		Vec3f radiance(0);
+		Ray ray = ray_in;
+
+		for (uint32_t i = 0; i < m_maxDepth; i++)
+		{
+			IntersectInfo info;
+			if (scene.intersect(ray, info))
+			{
+				// reflect direction
+				ray.origin = info.surfaceInfo.position;
+				ray.direction = reflect(ray.direction, info.surfaceInfo.ng);
+
+				//radiance += 0.8 * castRay(hitPoint + hitNormal * options.bias, R, objects, lights, options, depth + 1);
+
+				//// diffuse
+				//for (const auto& light : scene.getDeltaLights())
+				//{
+				//	Vec3f lightDir, lightIntensity;
+				//	IntersectInfo sinfo;
+				//	light->illuminate(info.surfaceInfo.position, lightDir, lightIntensity, sinfo.t);
+				//	bool vis = !scene.intersect(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * 0.1, -lightDir), sinfo);
+				//	// compute the color of a diffuse surface illuminated
+				//	radiance += vis * Vec3f(1.0f, 1.0f, 1.0f) / PI * lightIntensity * std::max(0.f, dot(info.surfaceInfo.ns, -lightDir));
+				//}
+			}
+		}		
+
+		return radiance;
+	};
+
+private:
+	const uint32_t m_maxDepth;
+
+};
+
 
 class PathTracing : public PathIntegrator
 {
