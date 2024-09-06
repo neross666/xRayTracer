@@ -10,7 +10,7 @@ class Light
 public:
     Light(const Matrix44f& l2w, const Vec3f& c = 1, const float& i = 1) : lightToWorld(l2w), color(c), intensity(i) {}
     virtual ~Light() {}
-    virtual void illuminate(const Vec3f& P, Vec3f&, Vec3f&, float&) const = 0;
+    virtual void illuminate(const Vec3f& P, Vec3f& lightDir, Vec3f& lightIntensity, float& distance) const = 0;
     Vec3f color;
     float intensity;
     Matrix44f lightToWorld;
@@ -46,7 +46,7 @@ class PointLight : public Light
 {
     Vec3f pos;
 public:
-    PointLight(const Matrix44f& l2w, const Vec3f& c = 1, const float& i = 1) : Light(l2w, c, i)
+    PointLight(const Matrix44f& l2w, const Vec3f& c = 1, const float& i = 100.0) : Light(l2w, c, i)
     {
         l2w.multVecMatrix(Vec3f(0), pos);
     }

@@ -114,24 +114,24 @@ public:
 
     void makeDeltaLight() {
         
-        Matrix44f l2w(
-            1.0, 0.0, 0.0, 0.0,
-            0.0, 0.0, 1.0, 0.0, 
-            0.0, 1.0, 0.0, 0.0, 
-            0.0, 0.0, 0.0, 1.0);
-        //Matrix44f l2w(0.95292, 0.289503, 0.0901785, 0, -0.0960954, 0.5704, -0.815727, 0, -0.287593, 0.768656, 0.571365, 0, 0, 0, 0, 1);
-        m_deltaLight = std::make_shared<DistantLight>(l2w);
-
-        //Matrix44f mat(
+        //Matrix44f l2w(
         //    1.0, 0.0, 0.0, 0.0,
-        //    0.0, 1.0, 0.0, 0.0, 
         //    0.0, 0.0, 1.0, 0.0, 
-        //    0.0, 3.0, 1.0, 1.0);
-        //m_deltaLight = std::make_shared<PointLight>(mat);
+        //    0.0, 1.0, 0.0, 0.0, 
+        //    0.0, 0.0, 0.0, 1.0);
+        Matrix44f l2w(0.95292, 0.289503, 0.0901785, 0, -0.0960954, 0.5704, -0.815727, 0, -0.287593, 0.768656, 0.571365, 0, 0, 0, 0, 1);
+        m_deltaLights.push_back(std::make_shared<DistantLight>(l2w, Vec3f(0.0, 1.0, 0.0), 0.5));
+
+        Matrix44f mat(
+            1.0, 0.0, 0.0, 0.0,
+            0.0, 1.0, 0.0, 0.0, 
+            0.0, 0.0, 1.0, 0.0, 
+            3.0, 3.0, 0.0, 1.0);
+        m_deltaLights.push_back(std::make_shared<PointLight>(mat, Vec3f(1.0, 0.0, 0.0), 100.0));
     }
 
-    std::shared_ptr<Light> getDeltaLight() const{
-        return m_deltaLight;
+    std::vector<std::shared_ptr<Light>> getDeltaLights() const{
+        return m_deltaLights;
     }
 
 
@@ -205,7 +205,7 @@ private:
     std::vector<Vec3f> m_normals;
     std::vector<Vec2f> m_texcoords;
 
-    std::shared_ptr<Light> m_deltaLight;
+    std::vector<std::shared_ptr<Light>> m_deltaLights;
 };
 
  

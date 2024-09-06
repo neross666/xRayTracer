@@ -45,7 +45,7 @@ int main(int argc, char** argv)
 
 	//const Vec3f camera_pos = Vec3f(260, 260, -500.0);
 	//const Vec3f camera_forward = Vec3f(0, 0, 1);
-	const Vec3f camera_pos = Vec3f(0, 0, 5.0);
+	const Vec3f camera_pos = Vec3f(0, 0, 10.0);
 	const Vec3f camera_forward = Vec3f(0, 0, -1);
 	const float FOV = 0.25 * PI;
 
@@ -55,7 +55,7 @@ int main(int argc, char** argv)
 	// build scene
 	Scene scene;
 	std::string dataDir = DATA_DIR;
-	scene.loadObj(dataDir + "sphere32.obj");
+	scene.loadObj(dataDir + "sphere8.obj");
 	scene.makeDeltaLight();
 	//scene.build();
 

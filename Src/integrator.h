@@ -108,45 +108,20 @@ public:
 			//return 0.5f * (info.surfaceInfo.ns + 1.0f);
 
 			//auto faceRatio = std::max(0.f, dot(info.surfaceInfo.ns, -ray_in.direction));
-			//return Vec3f(faceRatio);
+			//return Vec3f(faceRatio);				
 
-		
 			// diffuse
-			auto light = dynamic_cast<DistantLight*>(scene.getDeltaLight().get());
-			if (light == nullptr)			{
-				spdlog::error("[NormalIntegrator] light is invalide");
-				exit(0);
-			}
-
-			IntersectInfo sinfo;
-			Vec3f lightDir, lightIntensity;
-			light->illuminate(info.surfaceInfo.position, lightDir, lightIntensity, sinfo.t);
-
-			//bool vis = !scene.intersect(Ray(info.surfaceInfo.position, L), sinfo);
-			bool vis = !scene.intersect(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * 0.001, -lightDir), sinfo);
-
-			// compute the color of a diffuse surface illuminated
-			// by a single distant light source.
-			auto hitColor = vis * Vec3f(1.0f, 1.0f, 1.0f) / PI * lightIntensity * std::max(0.f, dot(info.surfaceInfo.ns, -lightDir));
+			Vec3f hitColor = Vec3f(0.0f);
+			for (const auto& light : scene.getDeltaLights())
+			{
+				Vec3f lightDir, lightIntensity;
+				IntersectInfo sinfo;
+				light->illuminate(info.surfaceInfo.position, lightDir, lightIntensity, sinfo.t);
+				bool vis = !scene.intersect(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * 0.1, -lightDir), sinfo);
+				// compute the color of a diffuse surface illuminated
+				hitColor += vis * Vec3f(1.0f, 1.0f, 1.0f) / PI * lightIntensity * std::max(0.f, dot(info.surfaceInfo.ns, -lightDir));				
+			}	
 			return hitColor;
-
-
-			// diffuse
-			//auto light = dynamic_cast<PointLight*>(scene.getDeltaLight().get());
-			//if (light == nullptr)
-			//{
-			//	spdlog::error("[NormalIntegrator] light is invalide");
-			//	exit(0);
-			//}
-
-			//Vec3f lightDir, lightIntensity;
-			//IntersectInfo sinfo;
-			//light->illuminate(info.surfaceInfo.position, lightDir, lightIntensity, sinfo.t);
-			//bool vis = !scene.intersect(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * 0.001, -lightDir), sinfo);
-			//// compute the color of a diffuse surface illuminated
-			//// by a single distant light source.
-			//auto hitColor = vis * Vec3f(1.0f, 0.5f, 1.0f) / PI * lightIntensity * std::max(0.f, dot(info.surfaceInfo.ns, -lightDir));
-			//return hitColor;
 		}
 		else {
 			return Vec3f(0);
