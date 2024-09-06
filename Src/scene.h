@@ -3,6 +3,7 @@
 #include <spdlog/spdlog.h>
 #include <tiny_obj_loader.h>
 #include "geometry.h"
+#include "light.h"
 
 class Scene
 {
@@ -22,13 +23,14 @@ public:
         tinyobj::ObjReader reader;
         if (!reader.ParseFromFile(inputfile, reader_config)) {
             if (!reader.Error().empty()) {
-                std::cerr << "TinyObjReader: " << reader.Error();
+                spdlog::error("[Scene] failed to load {} : {}",
+                    filepath.generic_string(), reader.Error());
             }
             exit(1);
         }
 
         if (!reader.Warning().empty()) {
-            std::cout << "TinyObjReader: " << reader.Warning();
+            spdlog::warn("[Scene] {}", reader.Warning());
         }
 
         auto& attrib = reader.GetAttrib();
@@ -38,6 +40,7 @@ public:
         // Loop over shapes
         for (size_t s = 0; s < shapes.size(); s++) {
             // Loop over faces(polygon)
+            spdlog::info("[Scene] loading shape: {}", shapes[s].name);
             size_t index_offset = 0;
             for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
                 size_t fv = size_t(shapes[s].mesh.num_face_vertices[f]); // vertex num of current face
@@ -108,10 +111,33 @@ public:
 
 	}
 
+
+    void makeDeltaLight() {
+        
+        Matrix44f l2w(
+            1.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 1.0, 0.0, 
+            0.0, 1.0, 0.0, 0.0, 
+            0.0, 0.0, 0.0, 1.0);
+        //Matrix44f l2w(0.95292, 0.289503, 0.0901785, 0, -0.0960954, 0.5704, -0.815727, 0, -0.287593, 0.768656, 0.571365, 0, 0, 0, 0, 1);
+        m_deltaLight = std::make_shared<DistantLight>(l2w);
+
+        //Matrix44f mat(
+        //    1.0, 0.0, 0.0, 0.0,
+        //    0.0, 1.0, 0.0, 0.0, 
+        //    0.0, 0.0, 1.0, 0.0, 
+        //    0.0, 3.0, 1.0, 1.0);
+        //m_deltaLight = std::make_shared<PointLight>(mat);
+    }
+
+    std::shared_ptr<Light> getDeltaLight() const{
+        return m_deltaLight;
+    }
+
+
 	bool intersect(const Ray& ray, IntersectInfo& info) const
 	{
         bool isIntersect = false;
-        info.t = FLT_MAX;
         for (size_t i = 0; i < m_vertices.size(); i+=3)
         {
             float t = 0.0f;
@@ -178,6 +204,8 @@ private:
     std::vector<Vec3f> m_vertices;
     std::vector<Vec3f> m_normals;
     std::vector<Vec2f> m_texcoords;
+
+    std::shared_ptr<Light> m_deltaLight;
 };
 
  

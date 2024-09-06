@@ -30,7 +30,7 @@ struct SurfaceInfo {
 };
 
 struct IntersectInfo {
-	float t;  // distance to the hit point
+	float t = kInfinity;  // distance to the hit point
 	SurfaceInfo surfaceInfo;
 	//const Primitive* hitPrimitive;
 };

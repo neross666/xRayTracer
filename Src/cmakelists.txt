@@ -17,7 +17,7 @@ find_package(VTK REQUIRED)
 
 add_executable(xRayTracer
 	"main.cpp"
- "geometry.h" "camera.h" "ray.h" "sampler.h" "integrator.h" "image.h" "scene.h")
+ "geometry.h" "camera.h" "ray.h" "sampler.h" "integrator.h" "image.h" "scene.h" "light.h")
 
  target_compile_definitions(xRayTracer
     PRIVATE 
@@ -25,6 +25,7 @@ add_executable(xRayTracer
 	TINYOBJLOADER_IMPLEMENTATION
 	CULLING
 	kEpsilon=FLT_EPSILON
+	kInfinity=FLT_MAX
 )
 
  target_include_directories(xRayTracer
