@@ -41,7 +41,7 @@ public:
 				sampler_per_pixel->setSeed((sampler.getSeed() + 1) * (j + width * i));
 
 				// warmup sampler
-				for (uint32_t k = 0; k < 10; ++k) { sampler_per_pixel->getNext1D(); }
+				//for (uint32_t k = 0; k < 10; ++k) { sampler_per_pixel->getNext1D(); }
 
 				// iteration
 				for (uint32_t k = 0; k < n_samples; ++k) {
@@ -107,11 +107,12 @@ public:
 		Vec3f radiance(0);
 
 		IntersectInfo info;
-		if (scene.intersect(ray_in, info)) {
+		if (scene.intersect(ray_in, info)) {	
 			//return 0.5f * (info.surfaceInfo.ns + 1.0f);
 
-			//auto faceRatio = std::max(0.f, dot(info.surfaceInfo.ns, -ray_in.direction));
-			//return Vec3f(faceRatio);				
+			/*auto tt = dot(info.surfaceInfo.ns, -ray_in.direction);
+			auto faceRatio = std::max(0.f, dot(info.surfaceInfo.ns, -ray_in.direction));
+			return Vec3f(faceRatio);*/
 
 			// diffuse
 			for (const auto& light : scene.getDeltaLights())
@@ -179,6 +180,11 @@ public:
 					ray.direction = reflect(ray.direction, info.surfaceInfo.ng);
 					ray.throughput *= 0.8;
 					//radiance += 0.8 * castRay(hitPoint + hitNormal * options.bias, R, objects, lights, options, depth + 1);
+				}
+					break;
+				case 2:// reflect and refract
+				{
+
 				}
 					break;
 				default:

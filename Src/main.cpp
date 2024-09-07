@@ -7,33 +7,45 @@
 #include <vtkOBJWriter.h>
 #include <vtkPolyData.h>
 #include <vtkCubeSource.h>
+#include <vtkTransform.h>
+#include <vtkTransformFilter.h>
 
 void makeSpere()
 {
 	vtkSmartPointer<vtkSphereSource> sphereSource = vtkSmartPointer<vtkSphereSource>::New();
-	sphereSource->SetCenter(0.0, 0.0, 0.0); 
-	sphereSource->SetRadius(1.0);
-	sphereSource->SetThetaResolution(32);
-	sphereSource->SetPhiResolution(32);
+	sphereSource->SetCenter(-.5, 1.5, -1.0); 
+	sphereSource->SetRadius(.6);
+	sphereSource->SetThetaResolution(8);
+	sphereSource->SetPhiResolution(8);
 	sphereSource->Update(); 
 
-	vtkSmartPointer<vtkCubeSource> cubeSource = vtkSmartPointer<vtkCubeSource>::New();
-	cubeSource->SetXLength(3.0);
-	cubeSource->SetYLength(3.0);
-	cubeSource->SetZLength(0.01); // 给正方形一个很小的高度，使其看起来像一个平面
-	cubeSource->SetCenter(0.0, -1.5, 0.0); // 将正方形放在球的下方
-	cubeSource->Update();
+
 
 	vtkSmartPointer<vtkOBJWriter> objWriter = vtkSmartPointer<vtkOBJWriter>::New();
 	std::string filename = DATA_DIR;
-	objWriter->SetFileName((filename + "sphere32.obj").c_str());
+	objWriter->SetFileName((filename + "sphere.obj").c_str());
 	objWriter->SetInputData(sphereSource->GetOutput());
 	objWriter->Write();
+}
+
+void makeCube()
+{
+	// 创建立方体源
+	vtkSmartPointer<vtkCubeSource> cubeSource = vtkSmartPointer<vtkCubeSource>::New();
+	cubeSource->SetCenter(-2.0, 2.0, -2.0);
+
+	// 写入OBJ文件
+	vtkSmartPointer<vtkOBJWriter> writer = vtkSmartPointer<vtkOBJWriter>::New();
+	std::string filename = DATA_DIR;
+	writer->SetFileName((filename + "cube.obj").c_str());
+	writer->SetInputConnection(cubeSource->GetOutputPort());
+	writer->Write();
 }
 
 int main(int argc, char** argv)
 {
 	//makeSpere();
+	//makeCube();
 
 
 	const uint32_t width = 512;
@@ -61,8 +73,8 @@ int main(int argc, char** argv)
 
 	// render
 	UniformSampler sampler;
-	WhittedIntegrator integrator(camera);
-	//NormalIntegrator integrator(camera);
+	//WhittedIntegrator integrator(camera);
+	NormalIntegrator integrator(camera);
 	//PathTracing integrator(camera, 100, 10);
 	integrator.render(scene, sampler, image);
 

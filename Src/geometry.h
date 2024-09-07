@@ -4,6 +4,8 @@
 #include <iostream>
 #include <limits>
 #include <iomanip>
+#include <algorithm>
+
 
 constexpr float PI = 3.14159265359;
 
@@ -635,4 +637,17 @@ inline void orthonormalBasis(const Vec3f& n, Vec3f& t, Vec3f& b)
 inline Vec3f reflect(const Vec3f& I, const Vec3f& N)
 {
 	return I - 2 * dot(I, N) * N;
+}
+
+
+Vec3f refract(const Vec3f& I, const Vec3f& N, const float& ior)
+{
+	float cosi = std::clamp(-1.0f, 1.0f, dot(I,N));
+	float etai = 1, etat = ior;
+	Vec3f n = N;
+	if (cosi < 0) { cosi = -cosi; }
+	else { std::swap(etai, etat); n = -N; }
+	float eta = etai / etat;
+	float k = 1 - eta * eta * (1 - cosi * cosi);
+	return k < 0 ? 0 : eta * I + (eta * cosi - sqrtf(k)) * n;
 }
