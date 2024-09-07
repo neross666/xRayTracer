@@ -11,7 +11,8 @@
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "cmakeExecutable": "C:\\Program Files\\CMake\\bin\\cmake.exe",
-      "cmakeToolchain": "D:\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake"
+      "cmakeToolchain": "C:/Src/vcpkg/scripts/buildsystems/vcpkg.cmake",
+      "variables": []
     },
     {
       "name": "x64-Release",
@@ -24,7 +25,8 @@
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "cmakeExecutable": "C:\\Program Files\\CMake\\bin\\cmake.exe",
-      "cmakeToolchain": "D:\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake"
+      "cmakeToolchain": "C:/Src/vcpkg/scripts/buildsystems/vcpkg.cmake",
+      "variables": []
     }
   ]
 }

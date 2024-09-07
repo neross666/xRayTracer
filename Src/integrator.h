@@ -1,6 +1,7 @@
 #pragma once
 #include <omp.h>
 #include <optional>
+#include <spdlog/spdlog.h>
 
 #include "camera.h"
 #include "geometry.h"
@@ -120,7 +121,7 @@ public:
 				light->illuminate(info.surfaceInfo.position, lightDir, lightIntensity, sinfo.t);
 				bool vis = !scene.intersect(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * 0.1, -lightDir), sinfo);
 				// compute the color of a diffuse surface illuminated
-				radiance += vis * Vec3f(1.0f, 1.0f, 1.0f) / PI * lightIntensity * std::max(0.f, dot(info.surfaceInfo.ns, -lightDir));
+				radiance += vis * info.hitObject->albedo() / PI * lightIntensity * std::max(0.f, dot(info.surfaceInfo.ns, -lightDir));
 			}
 		}
 
@@ -131,46 +132,66 @@ private:
 
 };
 
-class XIntegrator : public PathIntegrator
+class WhittedIntegrator : public PathIntegrator
 {
 public:
-	XIntegrator(const std::shared_ptr<Camera>& camera, uint32_t maxDepth = 100)
+	WhittedIntegrator(const std::shared_ptr<Camera>& camera, uint32_t maxDepth = 100)
 		: PathIntegrator(camera, 1), m_maxDepth(maxDepth) {
 	}
-	virtual ~XIntegrator() = default;
+	virtual ~WhittedIntegrator() = default;
 
 
 	Vec3f integrate(const Ray& ray_in, const Scene& scene,
 		Sampler& sampler) const override
 	{
-		Vec3f radiance(0);
 		Ray ray = ray_in;
+		ray.throughput = Vec3f(1, 1, 1);
 
-		for (uint32_t i = 0; i < m_maxDepth; i++)
+		uint32_t i = 0;
+		for (; i < m_maxDepth; i++)
 		{
 			IntersectInfo info;
 			if (scene.intersect(ray, info))
 			{
-				// reflect direction
-				ray.origin = info.surfaceInfo.position;
-				ray.direction = reflect(ray.direction, info.surfaceInfo.ng);
-
-				//radiance += 0.8 * castRay(hitPoint + hitNormal * options.bias, R, objects, lights, options, depth + 1);
-
-				//// diffuse
-				//for (const auto& light : scene.getDeltaLights())
-				//{
-				//	Vec3f lightDir, lightIntensity;
-				//	IntersectInfo sinfo;
-				//	light->illuminate(info.surfaceInfo.position, lightDir, lightIntensity, sinfo.t);
-				//	bool vis = !scene.intersect(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * 0.1, -lightDir), sinfo);
-				//	// compute the color of a diffuse surface illuminated
-				//	radiance += vis * Vec3f(1.0f, 1.0f, 1.0f) / PI * lightIntensity * std::max(0.f, dot(info.surfaceInfo.ns, -lightDir));
-				//}
+				switch (info.hitObject->material())
+				{
+				case 0:// diffuse
+				{
+					Vec3f radiance(0);
+					for (const auto& light : scene.getDeltaLights())
+					{
+						Vec3f lightDir, lightIntensity;
+						IntersectInfo sinfo;
+						light->illuminate(info.surfaceInfo.position, lightDir, lightIntensity, sinfo.t);
+						bool vis = !scene.intersect(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * 0.1, -lightDir), sinfo);
+						// compute the color of a diffuse surface illuminated
+						radiance += vis * info.hitObject->albedo() / PI * lightIntensity * std::max(0.f, dot(info.surfaceInfo.ns, -lightDir));
+					}
+					radiance *= ray.throughput;
+					// exit loop
+					return radiance;
+				}
+					break;
+				case 1:// mirror
+				{
+					// reflect direction
+					ray.origin = info.surfaceInfo.position;
+					ray.direction = reflect(ray.direction, info.surfaceInfo.ng);
+					ray.throughput *= 0.8;
+					//radiance += 0.8 * castRay(hitPoint + hitNormal * options.bias, R, objects, lights, options, depth + 1);
+				}
+					break;
+				default:
+					break;
+				}				
 			}
-		}		
-
-		return radiance;
+			else
+			{
+				return ray.throughput * Vec3f(0.235294, 0.67451, 0.843137);
+			}
+		}	
+		
+		return ray.throughput* Vec3f(0.235294, 0.67451, 0.843137);
 	};
 
 private:

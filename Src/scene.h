@@ -6,6 +6,7 @@
 #include "light.h"
 #include "primitive.h"
 
+
 class Scene
 {
 public:
@@ -43,6 +44,9 @@ public:
             // Loop over faces(polygon)
             spdlog::info("[Scene] loading shape: {}", shapes[s].name);
             size_t index_offset = 0;
+            
+            int materialID = -1;
+            std::vector<Primitive> primitives;
             for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
                 size_t fv = size_t(shapes[s].mesh.num_face_vertices[f]); // vertex num of current face
 
@@ -92,24 +96,24 @@ public:
                     texcoords.push_back(Vec2f(0, 1));
                 }
 
-                // populate vertices, indices, normals, texcoords
-                this->m_vertices.insert(m_vertices.end(), vertices.begin(), vertices.end());
-                this->m_normals.insert(m_normals.end(), normals.begin(), normals.end());
-                this->m_texcoords.insert(m_texcoords.end(), texcoords.begin(), texcoords.end());                
+                primitives.emplace_back(Primitive(vertices, normals, texcoords));
 
+                
                 // material ID of current face
-                const int materialID = shapes[s].mesh.material_ids[f];
-                std::optional<tinyobj::material_t> material = std::nullopt;
-                if (materialID != -1) 
-                    material = materials[materialID];
-                const uint32_t faceID = this->m_vertices.size() / 3 - 1;
-                //this->m_materials.emplace(faceID, material);
-
-                m_primitives.push_back(Primitive(materialID));
-
+                const int mID = shapes[s].mesh.material_ids[f];
+                if (materialID != mID)
+                {
+                    if (materialID != -1){
+                        spdlog::warn("[Scene] Multiple materials in one object. {}", materials[materialID].name);
+                    }else{
+                        materialID = mID;
+                    }					
+                }               
 
                 index_offset += fv;
             }
+            
+            m_objects[shapes[s].name] = std::make_shared<Object>(materialID, primitives);
         }
 
 	}
@@ -126,14 +130,14 @@ public:
         //    0.0, 1.0, 0.0, 0.0, 
         //    0.0, 0.0, 0.0, 1.0);
         Matrix44f l2w(0.95292, 0.289503, 0.0901785, 0, -0.0960954, 0.5704, -0.815727, 0, -0.287593, 0.768656, 0.571365, 0, 0, 0, 0, 1);
-        m_deltaLights.push_back(std::make_shared<DistantLight>(l2w, Vec3f(0.0, 1.0, 0.0), 0.5));
+        m_deltaLights.push_back(std::make_shared<DistantLight>(l2w, Vec3f(1.0, 1.0, 1.0), 0.5));
 
         Matrix44f mat(
             1.0, 0.0, 0.0, 0.0,
             0.0, 1.0, 0.0, 0.0, 
             0.0, 0.0, 1.0, 0.0, 
             3.0, 3.0, 0.0, 1.0);
-        m_deltaLights.push_back(std::make_shared<PointLight>(mat, Vec3f(1.0, 0.0, 0.0), 100.0));
+        m_deltaLights.push_back(std::make_shared<PointLight>(mat, Vec3f(0.63, 0.33, 0.03), 500.0));
     }
 
     std::vector<std::shared_ptr<Light>> getDeltaLights() const{
@@ -144,30 +148,39 @@ public:
 	bool intersect(const Ray& ray, IntersectInfo& info) const
 	{
         bool isIntersect = false;
-        for (size_t i = 0; i < m_vertices.size(); i+=3)
+        for (const auto&[name, obj] : m_objects)
         {
-            float t = 0.0f;
-            float u = 0.0;
-            float v = 0.0;
-            bool rst = rayTriangleIntersect(ray.origin, ray.direction,
-                m_vertices[i], m_vertices[i+1], m_vertices[i+2], 
-                t, u, v);
-            if (rst)
+            auto primitives = obj->primitives();
+            for (auto& primitive : primitives)
             {
-                isIntersect = true;
-                if (t < info.t)
-                {
-                    info.t = t;
-                    info.surfaceInfo.position = ray(t);
-                    info.surfaceInfo.barycentric = Vec2f(u, v);
-                    info.surfaceInfo.texcoords = m_texcoords[i] * (1.0f - u - v) + m_texcoords[i + 1] * u + m_texcoords[i + 2] * v;
-                    info.surfaceInfo.ng = normalize(cross(m_vertices[i + 1] - m_vertices[i], m_vertices[i + 2] - m_vertices[i]));
-                    info.surfaceInfo.ns = m_normals[i] * (1.0f - u - v) + m_normals[i + 1] * u + m_normals[i + 2] * v;
-                    orthonormalBasis(info.surfaceInfo.ns, info.surfaceInfo.dpdu,
-                        info.surfaceInfo.dpdv);
-                }
+				const auto vertices = primitive.vertices();
+				const auto normals = primitive.normals();
+				const auto texcoords = primitive.texcoords();
+				float t = 0.0f;
+				float u = 0.0f;
+				float v = 0.0f;
+				bool rst = rayTriangleIntersect(ray.origin, ray.direction,
+					vertices[0], vertices[1], vertices[2],
+					t, u, v);
+				if (rst)
+				{
+					isIntersect = true;
+					if (t < info.t)
+					{
+						info.t = t;
+						info.surfaceInfo.position = ray(t);
+						info.surfaceInfo.barycentric = Vec2f(u, v);
+						info.surfaceInfo.texcoords = texcoords[0] * (1.0f - u - v) + texcoords[1] * u + texcoords[2] * v;
+						info.surfaceInfo.ng = normalize(cross(vertices[1] - vertices[0], vertices[2] - vertices[0]));
+						info.surfaceInfo.ns = normals[0] * (1.0f - u - v) + normals[1] * u + normals[2] * v;
+						orthonormalBasis(info.surfaceInfo.ns, info.surfaceInfo.dpdu,
+							info.surfaceInfo.dpdv);
+						info.hitObject = obj.get();
+					}
+				}
             }
         }
+
         return isIntersect;
 	}
 
@@ -206,18 +219,9 @@ public:
     }
 
 protected:
-private:
-    std::vector<Vec3f> m_vertices;
-    std::vector<Vec3f> m_normals;
-    std::vector<Vec2f> m_texcoords;
-
-    // save all material type
-    std::unordered_map<uint32_t, std::optional<tinyobj::material_t>> m_materials;
-
-    // need point a material_t obj
-    std::vector<Primitive> m_primitives;
-
-    std::vector<std::shared_ptr<Light>> m_deltaLights;
+private:    
+	std::vector<std::shared_ptr<Light>> m_deltaLights;
+	std::unordered_map<std::string, std::shared_ptr<Object>> m_objects;
 };
 
  
