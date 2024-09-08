@@ -73,8 +73,8 @@ int main(int argc, char** argv)
 
 	// render
 	UniformSampler sampler;
-	//WhittedIntegrator integrator(camera);
-	NormalIntegrator integrator(camera);
+	WhittedIntegrator integrator(camera);
+	//NormalIntegrator integrator(camera);
 	//PathTracing integrator(camera, 100, 10);
 	integrator.render(scene, sampler, image);
 

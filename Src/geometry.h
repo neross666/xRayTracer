@@ -642,7 +642,7 @@ inline Vec3f reflect(const Vec3f& I, const Vec3f& N)
 
 Vec3f refract(const Vec3f& I, const Vec3f& N, const float& ior)
 {
-	float cosi = std::clamp(-1.0f, 1.0f, dot(I,N));
+	float cosi = std::clamp(dot(I, N), -1.0f, 1.0f);
 	float etai = 1, etat = ior;
 	Vec3f n = N;
 	if (cosi < 0) { cosi = -cosi; }
@@ -650,4 +650,29 @@ Vec3f refract(const Vec3f& I, const Vec3f& N, const float& ior)
 	float eta = etai / etat;
 	float k = 1 - eta * eta * (1 - cosi * cosi);
 	return k < 0 ? 0 : eta * I + (eta * cosi - sqrtf(k)) * n;
+}
+
+// [comment]
+// Evaluate Fresnel equation (ration of reflected light for a given incident direction and surface normal)
+// [/comment]
+void fresnel(const Vec3f& I, const Vec3f& N, const float& ior, float& kr)
+{
+	float cosi = std::clamp(dot(I, N) , -1.0f, 1.0f);
+	float etai = 1, etat = ior;
+	if (cosi > 0) { std::swap(etai, etat); }
+	// Compute sini using Snell's law
+	float sint = etai / etat * sqrtf(std::max(0.f, 1 - cosi * cosi));
+	// Total internal reflection
+	if (sint >= 1) {
+		kr = 1;
+	}
+	else {
+		float cost = sqrtf(std::max(0.f, 1 - sint * sint));
+		cosi = fabsf(cosi);
+		float Rs = ((etat * cosi) - (etai * cost)) / ((etat * cosi) + (etai * cost));
+		float Rp = ((etai * cosi) - (etat * cost)) / ((etai * cosi) + (etat * cost));
+		kr = (Rs * Rs + Rp * Rp) / 2;
+	}
+	// As a consequence of the conservation of energy, transmittance is given by:
+	// kt = 1 - kr;
 }

@@ -136,7 +136,7 @@ private:
 class WhittedIntegrator : public PathIntegrator
 {
 public:
-	WhittedIntegrator(const std::shared_ptr<Camera>& camera, uint32_t maxDepth = 100)
+	WhittedIntegrator(const std::shared_ptr<Camera>& camera, uint32_t maxDepth = 3)
 		: PathIntegrator(camera, 1), m_maxDepth(maxDepth) {
 	}
 	virtual ~WhittedIntegrator() = default;
@@ -145,12 +145,23 @@ public:
 	Vec3f integrate(const Ray& ray_in, const Scene& scene,
 		Sampler& sampler) const override
 	{
-		Ray ray = ray_in;
-		ray.throughput = Vec3f(1, 1, 1);
+		Vec3f total_radiance(0);
+		Ray ray_root = ray_in;
+		ray_root.depth = 0;
+		ray_root.throughput = Vec3f(1, 1, 1);
 
-		uint32_t i = 0;
-		for (; i < m_maxDepth; i++)
+		std::queue<Ray> rays;
+		rays.push(ray_root);
+
+		while (!rays.empty())
 		{
+			Ray ray = rays.front();	rays.pop();
+			if (ray.depth > m_maxDepth)
+			{
+				total_radiance += ray.throughput * Vec3f(0.235294, 0.67451, 0.843137);
+				continue;
+			}
+			
 			IntersectInfo info;
 			if (scene.intersect(ray, info))
 			{
@@ -169,35 +180,58 @@ public:
 						radiance += vis * info.hitObject->albedo() / PI * lightIntensity * std::max(0.f, dot(info.surfaceInfo.ns, -lightDir));
 					}
 					radiance *= ray.throughput;
-					// exit loop
-					return radiance;
+					total_radiance += radiance;
 				}
-					break;
+				break;
 				case 1:// mirror
 				{
 					// reflect direction
-					ray.origin = info.surfaceInfo.position;
-					ray.direction = reflect(ray.direction, info.surfaceInfo.ng);
-					ray.throughput *= 0.8;
-					//radiance += 0.8 * castRay(hitPoint + hitNormal * options.bias, R, objects, lights, options, depth + 1);
+					Ray reflect_ray;
+					reflect_ray.origin = info.surfaceInfo.position;
+					reflect_ray.direction = reflect(ray.direction, info.surfaceInfo.ng);
+					reflect_ray.throughput = 0.8*ray.throughput;
+					reflect_ray.depth = ray.depth + 1;
+					rays.push(reflect_ray);
 				}
-					break;
+				break;
 				case 2:// reflect and refract
 				{
+					// compute fresnel
+					float kr;
+					fresnel(ray.direction, info.surfaceInfo.ng, info.hitObject->ior(), kr);
+					bool outside = dot(ray.direction, info.surfaceInfo.ng) < 0;
+					Vec3f bias = /*options.bias*/0.001 * info.surfaceInfo.ng;
+					// compute refraction if it is not a case of total internal reflection
+					if (kr < 1) {
+						Ray refract_ray;
+						refract_ray.direction = normalize(refract(ray.direction, info.surfaceInfo.ng, info.hitObject->ior()));
+						refract_ray.origin = outside ? info.surfaceInfo.position - bias : info.surfaceInfo.position + bias;
+						refract_ray.throughput = 0.9*ray.throughput * (1 - kr);
+						refract_ray.depth = ray.depth + 1;
 
+						rays.push(refract_ray);
+					}
+
+					Ray reflect_ray;
+					reflect_ray.direction = normalize(reflect(ray.direction, info.surfaceInfo.ng));
+					reflect_ray.origin = outside ? info.surfaceInfo.position + bias : info.surfaceInfo.position - bias;
+					reflect_ray.throughput = 0.9*ray.throughput * kr;
+					reflect_ray.depth = ray.depth + 1;	
+
+					rays.push(reflect_ray);
 				}
-					break;
+				break;
 				default:
 					break;
-				}				
+				}
 			}
 			else
 			{
-				return ray.throughput * Vec3f(0.235294, 0.67451, 0.843137);
+				total_radiance += ray.throughput * Vec3f(0.235294, 0.67451, 0.843137);
 			}
-		}	
-		
-		return ray.throughput* Vec3f(0.235294, 0.67451, 0.843137);
+		}
+
+		return total_radiance;
 	};
 
 private:

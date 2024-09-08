@@ -3,7 +3,7 @@
 mtllib sphere8.mtl
 
 o sphere
-usemtl diffuse
+usemtl dielectric
 v 0 0 1
 v 0 0 -1
 v 0.4338837265968323 0 0.9009688496589661
@@ -223,7 +223,7 @@ f -5 -1 -2 -6
 
 
 o plane
-usemtl mirror
+usemtl diffuse
 v 5.0 -2.2 15.0
 v 5.0 -2.2 -15.0
 v -5.0 -2.2 -15.0

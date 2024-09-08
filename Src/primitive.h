@@ -46,6 +46,10 @@ public:
 		return m_albedo;
 	}
 
+	float ior() const {
+		return 1.3f;
+	}
+
 	int material() const{
 		return m_materialID;
 	}

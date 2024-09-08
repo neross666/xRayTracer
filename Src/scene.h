@@ -130,14 +130,15 @@ public:
         //    0.0, 1.0, 0.0, 0.0, 
         //    0.0, 0.0, 0.0, 1.0);
         Matrix44f l2w(0.95292, 0.289503, 0.0901785, 0, -0.0960954, 0.5704, -0.815727, 0, -0.287593, 0.768656, 0.571365, 0, 0, 0, 0, 1);
-        m_deltaLights.push_back(std::make_shared<DistantLight>(l2w, Vec3f(1.0, 1.0, 1.0), 0.5));
+        m_deltaLights.push_back(std::make_shared<DistantLight>(l2w, Vec3f(1.0, 1.0, 1.0), 1.0));
 
         Matrix44f mat(
             1.0, 0.0, 0.0, 0.0,
             0.0, 1.0, 0.0, 0.0, 
             0.0, 0.0, 1.0, 0.0, 
-            3.0, 3.0, 0.0, 1.0);
-        m_deltaLights.push_back(std::make_shared<PointLight>(mat, Vec3f(0.63, 0.33, 0.03), 500.0));
+            0.0, 0.0, 8.0, 1.0);
+		//m_deltaLights.push_back(std::make_shared<PointLight>(mat, Vec3f(0.63, 0.33, 0.03), 50.0));
+		//m_deltaLights.push_back(std::make_shared<PointLight>(mat, Vec3f(1.0, 1.0, 1.0), 100.0));
     }
 
     std::vector<std::shared_ptr<Light>> getDeltaLights() const{
@@ -195,7 +196,7 @@ public:
         Vec3f pvec = cross(dir, v0v2);
         float det = dot(v0v1, pvec);
                 
-#ifdef CULLING
+#ifdef CULLING  // 当考虑折射时，打开面剔除，会导致光线无法从电介质中穿出
         // if the determinant is negative the triangle is backfacing
         // if the determinant is close to 0, the ray misses the triangle
         if (det < kEpsilon) return false;

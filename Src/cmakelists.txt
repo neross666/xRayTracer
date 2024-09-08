@@ -23,7 +23,7 @@ add_executable(xRayTracer
     PRIVATE 
 	DATA_DIR="${PROJECT_SOURCE_DIR}/testdata/"
 	TINYOBJLOADER_IMPLEMENTATION
-	CULLING
+	#CULLING
 	kEpsilon=FLT_EPSILON
 	kInfinity=FLT_MAX
 )
