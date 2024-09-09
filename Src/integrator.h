@@ -187,7 +187,7 @@ public:
 				{
 					// reflect direction
 					Ray reflect_ray;
-					reflect_ray.origin = info.surfaceInfo.position;
+					reflect_ray.origin = info.surfaceInfo.position + 0.001 * info.surfaceInfo.ng;
 					reflect_ray.direction = reflect(ray.direction, info.surfaceInfo.ng);
 					reflect_ray.throughput = 0.8*ray.throughput;
 					reflect_ray.depth = ray.depth + 1;

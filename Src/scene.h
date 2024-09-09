@@ -113,10 +113,14 @@ public:
                 index_offset += fv;
             }
             
-            m_objects[shapes[s].name] = std::make_shared<Object>(materialID, primitives);
+            m_objects[shapes[s].name] = std::make_shared<Mesh>(primitives, materialID);
         }
 
 	}
+
+    void addObj(std::string name, std::shared_ptr<Object> obj) {
+        m_objects[name] = obj;
+    }
 
     void build() {
 
@@ -130,15 +134,24 @@ public:
         //    0.0, 1.0, 0.0, 0.0, 
         //    0.0, 0.0, 0.0, 1.0);
         Matrix44f l2w(0.95292, 0.289503, 0.0901785, 0, -0.0960954, 0.5704, -0.815727, 0, -0.287593, 0.768656, 0.571365, 0, 0, 0, 0, 1);
-        m_deltaLights.push_back(std::make_shared<DistantLight>(l2w, Vec3f(1.0, 1.0, 1.0), 1.0));
+        //m_deltaLights.push_back(std::make_shared<DistantLight>(l2w, Vec3f(1.0, 1.0, 1.0), 2.0f));
 
-        Matrix44f mat(
+        Matrix44f l2w2(
             1.0, 0.0, 0.0, 0.0,
             0.0, 1.0, 0.0, 0.0, 
             0.0, 0.0, 1.0, 0.0, 
-            0.0, 0.0, 8.0, 1.0);
+            5.0, 5.0, -1.0, 1.0);
 		//m_deltaLights.push_back(std::make_shared<PointLight>(mat, Vec3f(0.63, 0.33, 0.03), 50.0));
-		//m_deltaLights.push_back(std::make_shared<PointLight>(mat, Vec3f(1.0, 1.0, 1.0), 100.0));
+		m_deltaLights.push_back(std::make_shared<PointLight>(l2w2, Vec3f(0.0, 1.0, 0.0), 500.0));
+
+
+        Matrix44f l2w3(
+            1.0, 0.0, 0.0, 0.0,
+            0.0, 1.0, 0.0, 0.0,
+            0.0, 0.0, 1.0, 0.0,
+            -5.0, 5.0, 1.0, 1.0);
+        //m_deltaLights.push_back(std::make_shared<PointLight>(mat, Vec3f(0.63, 0.33, 0.03), 50.0));
+        m_deltaLights.push_back(std::make_shared<PointLight>(l2w3, Vec3f(1.0, 0.0, 0.0), 500.0));
     }
 
     std::vector<std::shared_ptr<Light>> getDeltaLights() const{
@@ -151,73 +164,13 @@ public:
         bool isIntersect = false;
         for (const auto&[name, obj] : m_objects)
         {
-            auto primitives = obj->primitives();
-            for (auto& primitive : primitives)
-            {
-				const auto vertices = primitive.vertices();
-				const auto normals = primitive.normals();
-				const auto texcoords = primitive.texcoords();
-				float t = 0.0f;
-				float u = 0.0f;
-				float v = 0.0f;
-				bool rst = rayTriangleIntersect(ray.origin, ray.direction,
-					vertices[0], vertices[1], vertices[2],
-					t, u, v);
-				if (rst)
-				{
-					isIntersect = true;
-					if (t < info.t)
-					{
-						info.t = t;
-						info.surfaceInfo.position = ray(t);
-						info.surfaceInfo.barycentric = Vec2f(u, v);
-						info.surfaceInfo.texcoords = texcoords[0] * (1.0f - u - v) + texcoords[1] * u + texcoords[2] * v;
-						info.surfaceInfo.ng = normalize(cross(vertices[1] - vertices[0], vertices[2] - vertices[0]));
-						info.surfaceInfo.ns = normals[0] * (1.0f - u - v) + normals[1] * u + normals[2] * v;
-						orthonormalBasis(info.surfaceInfo.ns, info.surfaceInfo.dpdu,
-							info.surfaceInfo.dpdv);
-						info.hitObject = obj.get();
-					}
-				}
-            }
+            if (obj->intersect(ray, info))
+                isIntersect = true;
         }
 
         return isIntersect;
 	}
 
-
-    bool rayTriangleIntersect(
-        const Vec3f& orig, const Vec3f& dir,
-        const Vec3f& v0, const Vec3f& v1, const Vec3f& v2,
-        float& t, float& u, float& v) const
-    {
-        Vec3f v0v1 = v1 - v0;
-        Vec3f v0v2 = v2 - v0;
-        Vec3f pvec = cross(dir, v0v2);
-        float det = dot(v0v1, pvec);
-                
-#ifdef CULLING  // 当考虑折射时，打开面剔除，会导致光线无法从电介质中穿出
-        // if the determinant is negative the triangle is backfacing
-        // if the determinant is close to 0, the ray misses the triangle
-        if (det < kEpsilon) return false;
-#else
-        // ray and triangle are parallel if det is close to 0
-        if (fabs(det) < kEpsilon) return false;
-#endif
-        float invDet = 1 / det;
-
-        Vec3f tvec = orig - v0;
-        u = dot(tvec,pvec) * invDet;
-        if (u < 0 || u > 1) return false;
-
-        Vec3f qvec = cross(tvec, v0v1);
-        v = dot(dir, qvec) * invDet;
-        if (v < 0 || u + v > 1) return false;
-
-        t = dot(v0v2, qvec) * invDet;
-
-        return t > kEpsilon;
-    }
 
 protected:
 private:    

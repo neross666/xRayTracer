@@ -67,9 +67,11 @@ int main(int argc, char** argv)
 	// build scene
 	Scene scene;
 	std::string dataDir = DATA_DIR;
-	scene.loadObj(dataDir + "sphere8.obj");
+	scene.loadObj(dataDir + "cube.obj");
+	scene.addObj("sphere_diffuse", std::make_shared<Sphere>(Vec3f(0.0), 1.0f, 2, Vec3f(0.0, 0.0, 0.0)));
+	//scene.addObj("sphere_mirror", std::make_shared<Sphere>(Vec3f(1.5), 1.0f, 1, Vec3f(0.0, 1.0, 0.0)));
+	scene.addObj("sphere_dielectric", std::make_shared<Sphere>(Vec3f(-1.0, 1.0, -1.0), 1.0f, 0, Vec3f(0.0, 0.0, 1.0)));
 	scene.makeDeltaLight();
-	scene.build();
 
 	// render
 	UniformSampler sampler;
