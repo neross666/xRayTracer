@@ -11,15 +11,15 @@ public:
 	}
 	~Primitive() = default;
 
-	std::vector<Vec3f>& vertices() {
+	const std::vector<Vec3f>& vertices() const {
 		return m_vertices;
 	}
 
-	std::vector<Vec3f>& normals() {
+	const std::vector<Vec3f>& normals() const {
 		return m_normals;
 	}
 
-	std::vector<Vec2f>& texcoords() {
+	const std::vector<Vec2f>& texcoords() const {
 		return m_texcoords;
 	}
 
@@ -160,7 +160,7 @@ public:
 		bool isIntersect = false;
 		for (auto& primitive : m_primitives)
 		{
-			const auto vertices = primitive.vertices();
+			const auto vertices = primitive.vertices();	
 			const auto normals = primitive.normals();
 			const auto texcoords = primitive.texcoords();
 			float t = 0.0f;
