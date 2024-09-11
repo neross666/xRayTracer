@@ -134,7 +134,7 @@ public:
         //    0.0, 1.0, 0.0, 0.0, 
         //    0.0, 0.0, 0.0, 1.0);
         Matrix44f l2w(0.95292, 0.289503, 0.0901785, 0, -0.0960954, 0.5704, -0.815727, 0, -0.287593, 0.768656, 0.571365, 0, 0, 0, 0, 1);
-        //m_deltaLights.push_back(std::make_shared<DistantLight>(l2w, Vec3f(1.0, 1.0, 1.0), 2.0f));
+        m_deltaLights.push_back(std::make_shared<DistantLight>(l2w, Vec3f(1.0, 1.0, 1.0), 1.5f));
 
         Matrix44f l2w2(
             1.0, 0.0, 0.0, 0.0,
@@ -142,19 +142,19 @@ public:
             0.0, 0.0, 1.0, 0.0, 
             5.0, 5.0, -1.0, 1.0);
 		//m_deltaLights.push_back(std::make_shared<PointLight>(mat, Vec3f(0.63, 0.33, 0.03), 50.0));
-		m_deltaLights.push_back(std::make_shared<PointLight>(l2w2, Vec3f(0.0, 1.0, 0.0), 500.0));
+		//m_deltaLights.push_back(std::make_shared<PointLight>(l2w2, Vec3f(0.0, 1.0, 0.0), 500.0));
 
 
         Matrix44f l2w3(
             1.0, 0.0, 0.0, 0.0,
             0.0, 1.0, 0.0, 0.0,
             0.0, 0.0, 1.0, 0.0,
-            -5.0, 5.0, 1.0, 1.0);
+            0.0, 5.0, 0.0, 1.0);
         //m_deltaLights.push_back(std::make_shared<PointLight>(mat, Vec3f(0.63, 0.33, 0.03), 50.0));
-        m_deltaLights.push_back(std::make_shared<PointLight>(l2w3, Vec3f(1.0, 0.0, 0.0), 500.0));
+        m_deltaLights.push_back(std::make_shared<PointLight>(l2w3, Vec3f(1.0, 1.0, 0.0), 50.0));
     }
 
-    std::vector<std::shared_ptr<Light>> getDeltaLights() const{
+    const std::vector<std::shared_ptr<Light>>& getDeltaLights() const{
         return m_deltaLights;
     }
 
@@ -170,6 +170,18 @@ public:
 
         return isIntersect;
 	}
+
+    // ignore semi-translucent
+    bool occluded(const Ray& ray, float t_max) const
+    {
+        for (const auto& [name, obj] : m_objects)
+        {
+            if (obj->occluded(ray, t_max))
+                return true;
+        }
+
+        return false;
+    }
 
 
 protected:

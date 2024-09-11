@@ -39,7 +39,9 @@ public:
 
 	virtual ~Object() = default;
 
-	virtual bool intersect(const Ray& ray, IntersectInfo& info) = 0;
+	virtual bool intersect(const Ray& ray, IntersectInfo& info) const = 0;
+
+	virtual bool occluded(const Ray& ray, float t_max) const = 0;
 	
 	Vec3f albedo() const {
 		return m_albedo;
@@ -67,7 +69,7 @@ public:
 	}
 	~Sphere() = default;
 
-	bool intersect(const Ray& ray, IntersectInfo& info) override
+	bool intersect(const Ray& ray, IntersectInfo& info) const override
 	{
 		float t = 0.0f;
 		if (!doIntersect(ray.origin, ray.direction, t))
@@ -85,6 +87,12 @@ public:
 			info.hitObject = this;
 		}
 		return true;
+	}
+
+	bool occluded(const Ray& ray, float t_max) const override
+	{
+		float t = 0.0f;
+		return doIntersect(ray.origin, ray.direction, t) && t < t_max;		
 	}
 
 private:
@@ -155,7 +163,7 @@ public:
 	}
 	~Mesh() = default;
 
-	bool intersect(const Ray& ray, IntersectInfo& info) override 
+	bool intersect(const Ray& ray, IntersectInfo& info) const override
 	{
 		bool isIntersect = false;
 		for (auto& primitive : m_primitives)
@@ -188,6 +196,25 @@ public:
 		}
 
 		return isIntersect;
+	}
+
+	bool occluded(const Ray& ray, float t_max) const override
+	{
+		for (auto& primitive : m_primitives)
+		{
+			const auto vertices = primitive.vertices();
+			const auto normals = primitive.normals();
+			const auto texcoords = primitive.texcoords();
+			float t = 0.0f;
+			float u = 0.0f;
+			float v = 0.0f;
+			bool rst = rayTriangleIntersect(ray.origin, ray.direction,
+				vertices[0], vertices[1], vertices[2],
+				t, u, v);
+			if (rst && t < t_max)
+				return true;
+		}
+		return false;
 	}
 
 private:

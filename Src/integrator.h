@@ -172,12 +172,12 @@ public:
 					Vec3f radiance(0);
 					for (const auto& light : scene.getDeltaLights())
 					{
-						Vec3f lightDir, lightIntensity;
-						IntersectInfo sinfo;
-						light->illuminate(info.surfaceInfo.position, lightDir, lightIntensity, sinfo.t);
-						bool vis = !scene.intersect(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * 0.1, -lightDir), sinfo);
-						// compute the color of a diffuse surface illuminated
-						radiance += vis * info.hitObject->albedo() / PI * lightIntensity * std::max(0.f, dot(info.surfaceInfo.ns, -lightDir));
+						Vec3f wi;
+						float t_max, pdf;
+						Vec3f light_L = light->sample(info, wi, pdf, t_max);
+						bool vis = !scene.occluded(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * 0.1, wi), t_max);
+						radiance += vis * info.hitObject->albedo() * light_L * std::max(0.f, dot(info.surfaceInfo.ns, wi)) / (PI * pdf);
+					
 					}
 					radiance *= ray.throughput;
 					total_radiance += radiance;

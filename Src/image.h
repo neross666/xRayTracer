@@ -80,9 +80,9 @@ public:
 			for (int j = 0; j < width; ++j) {
 				Vec3f c = getPixel(i, j);
 
-				c[0] = std::pow(c[0], 1.0f / gamma);
-				c[1] = std::pow(c[1], 1.0f / gamma);
-				c[2] = std::pow(c[2], 1.0f / gamma);
+				c[0] = std::pow(std::min(c[0], 1.0f), 1.0f / gamma);
+				c[1] = std::pow(std::min(c[1], 1.0f), 1.0f / gamma);
+				c[2] = std::pow(std::min(c[2], 1.0f), 1.0f / gamma);
 
 				setPixel(i, j, c);
 			}
