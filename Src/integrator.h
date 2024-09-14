@@ -38,18 +38,18 @@ public:
 			for (uint32_t j = 0; j < width; ++j) {
 				// init sampler for each pixel
 				const std::unique_ptr<Sampler> sampler_per_pixel = sampler.clone();
-				sampler_per_pixel->setSeed((sampler.getSeed() + 1) * (j + width * i));
-
+				sampler_per_pixel->setSeed(j + width * i);
+				
 				// warmup sampler
-				//for (uint32_t k = 0; k < 10; ++k) { sampler_per_pixel->getNext1D(); }
+				sampler_per_pixel->discard(10);
 
 				// iteration
 				for (uint32_t k = 0; k < n_samples; ++k) {
 					// SSAA
 					const float u =
-						(2.0f * (j + sampler_per_pixel->getNext1D()) - width) / height;
+						(j + sampler_per_pixel->getNext1D()) / width;
 					const float v =
-						(height - 2.0f * (i + sampler_per_pixel->getNext1D())) / height;
+						(i + sampler_per_pixel->getNext1D()) / height;
 
 					Ray ray;
 					float pdf;
@@ -117,13 +117,19 @@ public:
 			// diffuse
 			for (const auto& light : scene.getDeltaLights())
 			{
-				Vec3f lightDir, lightIntensity;
-				IntersectInfo sinfo;
-				light->illuminate(info.surfaceInfo.position, lightDir, lightIntensity, sinfo.t);
-				bool vis = !scene.intersect(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * 0.1, -lightDir), sinfo);
-				// compute the color of a diffuse surface illuminated
-				radiance += vis * info.hitObject->albedo() / PI * lightIntensity * std::max(0.f, dot(info.surfaceInfo.ns, -lightDir));
-			}
+				Vec3f wi;
+				float pdf = 1.0;
+				float tmax = 0.0;
+				Vec3f light_L = light->sample(info, wi, pdf, tmax);
+
+				float bias = 0.1;
+				bool vis = !scene.occluded(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * bias, wi), tmax - bias);
+
+				if (pdf == 0.0f)
+					continue;
+
+				radiance += vis * info.hitObject->albedo() / PI * light_L * std::max(0.f, dot(info.surfaceInfo.ns, wi)) / pdf;
+			}		
 		}
 
 		return radiance;
@@ -131,6 +137,65 @@ public:
 
 private:
 
+};
+
+class DirectIntegrator : public PathIntegrator
+{
+public:
+	DirectIntegrator(const std::shared_ptr<Camera>& camera)
+		: PathIntegrator(camera, 1) {
+	}
+	virtual ~DirectIntegrator() = default;
+
+	Vec3f integrate(const Ray& ray_in, const Scene& scene,
+		Sampler& sampler) const override
+	{
+		Vec3f radiance(0.0f);
+		IntersectInfo info;
+		if (scene.intersect(ray_in, info))
+		{
+			switch (info.hitObject->material())
+			{
+			case 0:// ideal diffuse
+			{
+				size_t num_samples = 64;
+				for (const auto& light : scene.getAreaLights())
+				{
+					Vec3f L_light = 0;
+					for (size_t n = 0; n < num_samples; ++n) {
+						Vec3f wi;
+						float tmax, pdf;
+						Vec3f L = light->sample(info, wi, pdf, tmax, sampler);
+
+						if (pdf == 0)
+							continue;
+
+						auto bias = 0.1;
+						bool vis = !scene.occluded(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * bias, wi), tmax - bias);
+
+						L_light += vis * info.hitObject->albedo() / PI * L * std::max(0.0f, dot(info.surfaceInfo.ng, wi)) / pdf;
+					}
+					radiance += L_light / num_samples;
+				}
+			}
+				break;
+			case 3:// Light
+			{
+				radiance += Vec3f(1.0)/*info.hitObject->Le()*/;
+			}
+				break;
+			default:
+				break;
+			}
+		}
+		else
+		{
+			return Vec3f(0.18);
+		}
+
+
+		return radiance;
+	}
 };
 
 class WhittedIntegrator : public PathIntegrator

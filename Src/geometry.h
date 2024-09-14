@@ -622,6 +622,44 @@ public:
 typedef Matrix44<float> Matrix44f;
 
 
+template<typename S>
+Vec3<S> multVecMatrix(const Vec3<S>& src, const Matrix44<S> x)
+{
+	Vec3<S> dst;
+
+	S a, b, c, w;
+
+	a = src[0] * x[0][0] + src[1] * x[1][0] + src[2] * x[2][0] + x[3][0];
+	b = src[0] * x[0][1] + src[1] * x[1][1] + src[2] * x[2][1] + x[3][1];
+	c = src[0] * x[0][2] + src[1] * x[1][2] + src[2] * x[2][2] + x[3][2];
+	w = src[0] * x[0][3] + src[1] * x[1][3] + src[2] * x[2][3] + x[3][3];
+
+	dst[0] = a / w;
+	dst[1] = b / w;
+	dst[2] = c / w;
+
+	return dst;
+}
+
+template<typename S>
+Vec3<S> multDirMatrix(const Vec3<S>& src, const Matrix44<S> x)
+{
+	Vec3<S> dst;
+
+	S a, b, c;
+
+	a = src[0] * x[0][0] + src[1] * x[1][0] + src[2] * x[2][0];
+	b = src[0] * x[0][1] + src[1] * x[1][1] + src[2] * x[2][1];
+	c = src[0] * x[0][2] + src[1] * x[1][2] + src[2] * x[2][2];
+
+	dst[0] = a;
+	dst[1] = b;
+	dst[2] = c;
+
+	return dst;
+}
+
+
 inline void orthonormalBasis(const Vec3f& n, Vec3f& t, Vec3f& b)
 {
 	if (std::abs(n[1]) < 0.9f) {

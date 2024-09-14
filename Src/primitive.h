@@ -228,7 +228,7 @@ private:
 		Vec3f pvec = cross(dir, v0v2);
 		float det = dot(v0v1, pvec);
 
-#ifdef CULLING  // 当考虑折射时，打开面剔除，会导致光线无法从电介质中穿出
+#ifdef CULLING  // 褰撹�冭檻鎶樺皠鏃讹紝鎵撳紑闈㈠墧闄わ紝浼氬鑷村厜绾挎棤娉曚粠鐢典粙璐ㄤ腑绌垮嚭
 		// if the determinant is negative the triangle is backfacing
 		// if the determinant is close to 0, the ray misses the triangle
 		if (det < kEpsilon) return false;

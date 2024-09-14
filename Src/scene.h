@@ -134,7 +134,7 @@ public:
         //    0.0, 1.0, 0.0, 0.0, 
         //    0.0, 0.0, 0.0, 1.0);
         Matrix44f l2w(0.95292, 0.289503, 0.0901785, 0, -0.0960954, 0.5704, -0.815727, 0, -0.287593, 0.768656, 0.571365, 0, 0, 0, 0, 1);
-        m_deltaLights.push_back(std::make_shared<DistantLight>(l2w, Vec3f(1.0, 1.0, 1.0), 1.5f));
+        m_deltaLights.push_back(std::make_shared<DistantLight>(l2w, Vec3f(1.0, 1.0, 1.0), 1.0f));
 
         Matrix44f l2w2(
             1.0, 0.0, 0.0, 0.0,
@@ -149,13 +149,32 @@ public:
             1.0, 0.0, 0.0, 0.0,
             0.0, 1.0, 0.0, 0.0,
             0.0, 0.0, 1.0, 0.0,
-            0.0, 5.0, 0.0, 1.0);
+            0.0, 2.5, 0.0, 1.0);
         //m_deltaLights.push_back(std::make_shared<PointLight>(mat, Vec3f(0.63, 0.33, 0.03), 50.0));
-        m_deltaLights.push_back(std::make_shared<PointLight>(l2w3, Vec3f(1.0, 1.0, 0.0), 50.0));
+        m_deltaLights.push_back(std::make_shared<PointLight>(l2w3, Vec3f(1.0, 1.0, 0.0), 20.0f));
     }
 
-    const std::vector<std::shared_ptr<Light>>& getDeltaLights() const{
+    void makeAreaLight() {
+
+        Matrix44<float> l2w(
+            0, 0, -1, 0, 
+            0, 1, 0, 0, 
+            1, 0, 0, 0, 
+            -1, 0, -4, 1);
+
+        m_areaLights.push_back(std::make_shared<TriangleLight>(
+            Vec3f(-1, -1, 0),
+            Vec3f(1, -1, 0),
+            Vec3f(-1, 1, 0),
+            l2w, 5.0f*Vec3f(1.0, 1.0, 1.0)));
+    }
+
+    const std::vector<std::shared_ptr<DeltaLight>>& getDeltaLights() const{
         return m_deltaLights;
+    }
+
+    const std::vector<std::shared_ptr<AreaLight>>& getAreaLights() const {
+        return m_areaLights;
     }
 
 
@@ -186,7 +205,8 @@ public:
 
 protected:
 private:    
-	std::vector<std::shared_ptr<Light>> m_deltaLights;
+	std::vector<std::shared_ptr<DeltaLight>> m_deltaLights;
+    std::vector<std::shared_ptr<AreaLight>> m_areaLights;
 	std::unordered_map<std::string, std::shared_ptr<Object>> m_objects;
 };
 

@@ -7,29 +7,22 @@
 class Camera
 {
 protected:
-	Vec3f position;
-	Vec3f forward;
-	Vec3f right;
-	Vec3f up;
+	float aspect_ratio;
+	Matrix44f camera2world;
 
 public:
-	Camera(const Vec3f& position, const Vec3f& forward)
-		: position(position), forward(forward)
+	Camera(float aspect_ratio_, const Matrix44f& c2w)
+		: aspect_ratio(aspect_ratio_), camera2world(c2w)
 	{
-		right = normalize(cross(forward, Vec3f(0, 1, 0)));
-		up = normalize(cross(right, forward));
-
-		spdlog::info("[Camera] position: ({}, {}, {})", position[0], position[1],
-			position[2]);
+		auto forward = multDirMatrix(Vec3f(0.0f, 0.0f, -1.0f), c2w);
+		spdlog::info("[Camera] position: ({}, {}, {})", camera2world[3][0], camera2world[3][1],
+			camera2world[3][2]);
 		spdlog::info("[Camera] forward: ({}, {}, {})", forward[0], forward[1],
 			forward[2]);
-		spdlog::info("[Camera] right: ({}, {}, {})", right[0], right[1], right[2]);
-		spdlog::info("[Camera] up: ({}, {}, {})", up[0], up[1], up[2]);
 	}
 
-	void setTransform(const Matrix44f& mat) {
-		mat.multVecMatrix(position, position);
-		mat.multDirMatrix(forward, forward);
+	void setTransform(const Matrix44f& c2w) {
+		camera2world = c2w;
 	}
 
 	// sample ray emitting from the given sensor coordinate
@@ -43,24 +36,25 @@ class PinholeCamera : public Camera
 {
 private:
 	float FOV;
-	float focalLength;
+	float scale;
 
 public:
-	PinholeCamera(const Vec3f& position, const Vec3f& forward,
-		float FOV = 0.5f * PI)
-		: Camera(position, forward)
+	PinholeCamera(float aspect_ratio_, const Matrix44f& c2w,
+		float FOV = 90.0f)
+		: Camera(aspect_ratio_, c2w)
 	{
-		// compute focal length from FOV
-		focalLength = 1.0f / std::tan(0.5f * FOV);
-		spdlog::info("[PinholeCamera] focalLength: {}", focalLength);
+		scale = std::tan(FOV * 0.5f * PI / 180.f);
+		spdlog::info("[PinholeCamera] scale: {}", scale);
 	}
 
-	bool sampleRay(const Vec2f& uv, Sampler& sampler, Ray& ray,
+	bool sampleRay(const Vec2f& pixel, Sampler& sampler, Ray& ray,
 		float& pdf) const override
 	{
-		const Vec3f pinholePos = position + focalLength * forward;
-		const Vec3f sensorPos = pinholePos + uv[0] * right + uv[1] * up;
-		ray = Ray(sensorPos, normalize(sensorPos - position));
+		const Vec3f dir((2 * pixel[0] - 1) * scale, (1 - 2 * pixel[1]) * scale / aspect_ratio, -1);
+		ray.direction = normalize(multDirMatrix(dir, camera2world));
+
+		ray.origin = Vec3f(camera2world[3][0], camera2world[3][1], camera2world[3][2]);
+
 		pdf = 1.0f;
 
 		return true;
