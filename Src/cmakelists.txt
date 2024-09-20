@@ -26,6 +26,8 @@ add_executable(xRayTracer
 	#CULLING
 	kEpsilon=FLT_EPSILON
 	kInfinity=FLT_MAX
+	#AREA_SAMPLING
+	#INTERSECT_METHOD
 )
 
  target_include_directories(xRayTracer

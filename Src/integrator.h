@@ -34,8 +34,10 @@ public:
 
 		spdlog::info("[PathIntegrator] rendering...");
 #pragma omp parallel for collapse(2) schedule(dynamic, 1)
-		for (uint32_t i = 0; i < height; ++i) {
-			for (uint32_t j = 0; j < width; ++j) {
+		for (uint32_t i = 0; i < height; ++i) 
+		{
+			for (uint32_t j = 0; j < width; ++j) 
+			{
 				// init sampler for each pixel
 				const std::unique_ptr<Sampler> sampler_per_pixel = sampler.clone();
 				sampler_per_pixel->setSeed(j + width * i);
@@ -84,6 +86,8 @@ public:
 					}
 				}
 			}
+
+			std::cout << "\rprogress: " << i << "/" << height;
 		}
 		spdlog::info("[PathIntegrator] done");
 
@@ -122,7 +126,7 @@ public:
 				float tmax = 0.0;
 				Vec3f light_L = light->sample(info, wi, pdf, tmax);
 
-				float bias = 0.1;
+				float bias = 0.01;
 				bool vis = !scene.occluded(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * bias, wi), tmax - bias);
 
 				if (pdf == 0.0f)
@@ -158,19 +162,19 @@ public:
 			{
 			case 0:// ideal diffuse
 			{
-				size_t num_samples = 64;
+				size_t num_samples = 16;
 				for (const auto& light : scene.getAreaLights())
 				{
 					Vec3f L_light = 0;
 					for (size_t n = 0; n < num_samples; ++n) {
 						Vec3f wi;
-						float tmax, pdf;
+						float tmax, pdf = 0.0f;
 						Vec3f L = light->sample(info, wi, pdf, tmax, sampler);
 
 						if (pdf == 0)
 							continue;
 
-						auto bias = 0.1;
+						auto bias = 0.01f;
 						bool vis = !scene.occluded(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * bias, wi), tmax - bias);
 
 						L_light += vis * info.hitObject->albedo() / PI * L * std::max(0.0f, dot(info.surfaceInfo.ng, wi)) / pdf;

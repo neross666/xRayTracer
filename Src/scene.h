@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <filesystem>
 #include <spdlog/spdlog.h>
 #include <tiny_obj_loader.h>
@@ -128,13 +128,13 @@ public:
 
     void makeDeltaLight() {
         
-        //Matrix44f l2w(
-        //    1.0, 0.0, 0.0, 0.0,
-        //    0.0, 0.0, 1.0, 0.0, 
-        //    0.0, 1.0, 0.0, 0.0, 
-        //    0.0, 0.0, 0.0, 1.0);
+        /*Matrix44f l2w(
+            1.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 1.0, 0.0, 
+            0.0, 1.0, 0.0, 0.0, 
+            0.0, 0.0, 0.0, 1.0);*/
         Matrix44f l2w(0.95292, 0.289503, 0.0901785, 0, -0.0960954, 0.5704, -0.815727, 0, -0.287593, 0.768656, 0.571365, 0, 0, 0, 0, 1);
-        m_deltaLights.push_back(std::make_shared<DistantLight>(l2w, Vec3f(1.0, 1.0, 1.0), 1.0f));
+        //m_deltaLights.push_back(std::make_shared<DistantLight>(l2w, Vec3f(1.0, 1.0, 1.0), 1.0f));
 
         Matrix44f l2w2(
             1.0, 0.0, 0.0, 0.0,
@@ -149,9 +149,9 @@ public:
             1.0, 0.0, 0.0, 0.0,
             0.0, 1.0, 0.0, 0.0,
             0.0, 0.0, 1.0, 0.0,
-            0.0, 2.5, 0.0, 1.0);
-        //m_deltaLights.push_back(std::make_shared<PointLight>(mat, Vec3f(0.63, 0.33, 0.03), 50.0));
-        m_deltaLights.push_back(std::make_shared<PointLight>(l2w3, Vec3f(1.0, 1.0, 0.0), 20.0f));
+            0.0, 0.0, 2.0, 1.0);
+        //m_deltaLights.push_back(std::make_shared<PointLight>(l2w3, Vec3f(0.63, 0.33, 0.03), 2.0));
+        m_deltaLights.push_back(std::make_shared<PointLight>(l2w3, Vec3f(1.0, 1.0, 1.0), 2.0f));
     }
 
     void makeAreaLight() {
@@ -162,11 +162,22 @@ public:
             1, 0, 0, 0, 
             -1, 0, -4, 1);
 
-        m_areaLights.push_back(std::make_shared<TriangleLight>(
+        auto light = std::make_shared<QuadLight>(
             Vec3f(-1, -1, 0),
             Vec3f(1, -1, 0),
             Vec3f(-1, 1, 0),
-            l2w, 5.0f*Vec3f(1.0, 1.0, 1.0)));
+            l2w, 5.0f * Vec3f(1.0, 1.0, 1.0));
+
+        //m_areaLights.push_back(light);
+        //addObj("QuadLight", light->getObject());
+
+
+
+        Matrix44<float> xfm_sphere(.2, 0, 0, 0, 0, .2, 0, 0, 0, 0, .2, 0, 0, 0, -4, 1);
+        std::shared_ptr<SphereLight> sphere_light = std::make_shared<SphereLight>(Vec3f(0.0f), 0.2f, xfm_sphere, 20);        
+
+        m_areaLights.push_back(sphere_light);
+        addObj("SphereLight", sphere_light->getObject());
     }
 
     const std::vector<std::shared_ptr<DeltaLight>>& getDeltaLights() const{
@@ -195,7 +206,7 @@ public:
     {
         for (const auto& [name, obj] : m_objects)
         {
-            if (obj->occluded(ray, t_max))
+            if (obj->occluded(ray, t_max) && obj->material() != 3)
                 return true;
         }
 

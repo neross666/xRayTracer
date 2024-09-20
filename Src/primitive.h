@@ -32,6 +32,7 @@ private:
 class Object
 {
 public:
+	Object() = default;
 	Object(int materialID, Vec3f albedo)
 		: m_materialID(materialID), m_albedo(albedo) {
 
@@ -56,7 +57,7 @@ public:
 	}
 
 private:
-	const int m_materialID;
+	const int m_materialID = -1;
 	Vec3f m_albedo;
 };
 
@@ -153,6 +154,8 @@ private:
 class Mesh : public Object
 {
 public:
+	Mesh() = default;
+	Mesh(int materialID, Vec3f albedo = Vec3f(1.0f)) : Object(materialID, albedo) {}
 	Mesh(std::vector<Primitive>&& primitives, int materialID, Vec3f albedo = Vec3f(1.0f))
 		: Object(materialID, albedo), m_primitives(primitives) {
 
@@ -251,6 +254,57 @@ private:
 		return t > kEpsilon;
 	}
 
-private:
+protected:
 	std::vector<Primitive> m_primitives;
+};
+
+class SphereMesh : public Mesh {
+public:
+	SphereMesh(Vec3f center, float radius, int thetaResolution, int phiResolution, int materialID, Vec3f albedo = Vec3f(1.0f))
+		: center_(center), radius_(radius), num_theta_(thetaResolution), num_phi_(phiResolution),Mesh(materialID, albedo) {
+		Triangulate();
+	}
+
+private:	
+	void Triangulate()
+	{
+		std::vector<Vec3f> vertices;
+		std::vector<Vec3f> normals;
+
+		// vertices
+		for (int i = 0; i <= num_theta_; ++i) {
+			float theta = PI * i / num_theta_;
+			for (int j = 0; j <= num_phi_; ++j) {
+				float phi = 2 * PI * j / num_phi_;
+
+				Vec3f vertex = { sin(theta) * sin(phi), cos(theta), sin(theta) * cos(phi) };
+				vertices.push_back(center_ + radius_ * vertex);
+				normals.push_back(vertex);
+			}
+		}
+
+		// triangle
+		for (int i = 0; i < num_theta_; ++i) {
+			for (int j = 0; j < num_phi_; ++j) {
+				int first = (i * (num_phi_ + 1)) + j;
+				int second = first + num_phi_ + 1;
+
+				m_primitives.push_back(Primitive(
+					{ vertices[first],vertices[second],vertices[first + 1u] },
+					{ normals[first],normals[second],normals[first + 1u] },
+					{ Vec2f(0,0),Vec2f(1,0),Vec2f(0,1) }));
+				m_primitives.push_back(Primitive(
+					{ vertices[second],vertices[second + 1u],vertices[first + 1u] },
+					{ normals[second],normals[second + 1u],normals[first + 1u] },
+					{ Vec2f(0,0),Vec2f(1,0),Vec2f(0,1) }));
+			}
+		}
+	}
+
+
+private:
+	Vec3f center_ = Vec3f(0.0f);
+	float radius_ = 1.0f;
+	int num_theta_ = 10;	// polar:0~π
+	int num_phi_ = 10;		// az:0~2π
 };

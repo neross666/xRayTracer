@@ -55,14 +55,18 @@ int main(int argc, char** argv)
 
 	Image image(width, height);
 
-	//const Vec3f camera_pos = Vec3f(260, 260, -500.0);
-	//const Vec3f camera_forward = Vec3f(0, 0, 1);
+
 	const float aspect_ratio = static_cast<float>(width) / height;
 	const Matrix44f c2w(
 		0.827081, 0, -0.562083, 0,
 		-0.152433, 0.962525, -0.224298, 0,
 		0.541019, 0.271192, 0.796086, 0,
 		2.924339, 1.020801, 0.511729, 1);
+	const Matrix44f c2w1(
+		1.0, 0, 0, 0,
+		0, 1.0, 0, 0,
+		0, 0, 1.0, 0,
+		0, 0, 3.0, 1);
 	const float FOV = 60.0f;	
 	const auto camera =
 		std::make_shared<PinholeCamera>(aspect_ratio, c2w, FOV);
@@ -71,6 +75,7 @@ int main(int argc, char** argv)
 	Scene scene;
 	std::string dataDir = DATA_DIR;
 	scene.loadObj(dataDir + "triangleLight.obj");
+	//scene.addObj("sphere_mesh", std::make_shared<SphereMesh>(Vec3f(0.0), 1.0f, 10, 10, 0, Vec3f(1.0, 1.0, 1.0)));
 	//scene.loadObj(dataDir + "cube.obj");
 	//scene.addObj("sphere_diffuse", std::make_shared<Sphere>(Vec3f(0.0), 1.0f, 0, Vec3f(1.0, 1.0, 1.0)));
 	//scene.addObj("sphere_mirror", std::make_shared<Sphere>(Vec3f(1.5), 1.0f, 1, Vec3f(0.0, 1.0, 0.0)));
@@ -95,6 +100,8 @@ int main(int argc, char** argv)
 	auto output = image.writeMat();
 	cv::imshow("output", output);
 	cv::waitKey(0);
+
+	cv::imwrite("xRayTracer.jpg", output);
 
 	return 0;
 }
