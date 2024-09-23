@@ -10,6 +10,18 @@
 #include "light.h"
 
 
+Vec3f uniformSampleHemisphere(const float& r1, const float& r2)
+{
+	// cos(theta) = r1 = y
+	// cos^2(theta) + sin^2(theta) = 1 -> sin(theta) = srtf(1 - cos^2(theta))
+	float sinTheta = sqrtf(1 - r1 * r1);
+	float phi = 2 * PI * r2;
+	float x = sinTheta * cosf(phi);
+	float z = sinTheta * sinf(phi);
+	return Vec3f(x, r1, z);
+}
+
+
 class PathIntegrator
 {
 private:
@@ -34,7 +46,7 @@ public:
 
 		spdlog::info("[PathIntegrator] rendering...");
 #pragma omp parallel for collapse(2) schedule(dynamic, 1)
-		for (uint32_t i = 0; i < height; ++i) 
+		for (uint32_t i = 52; i < height; ++i) 
 		{
 			for (uint32_t j = 0; j < width; ++j) 
 			{
@@ -118,8 +130,8 @@ public:
 			auto faceRatio = std::max(0.f, dot(info.surfaceInfo.ns, -ray_in.direction));
 			return Vec3f(faceRatio);*/
 
-			// diffuse
-			for (const auto& light : scene.getDeltaLights())
+			// diffuse,light sample
+			/*for (const auto& light : scene.getDeltaLights())
 			{
 				Vec3f wi;
 				float pdf = 1.0;
@@ -133,7 +145,25 @@ public:
 					continue;
 
 				radiance += vis * info.hitObject->albedo() / PI * light_L * std::max(0.f, dot(info.surfaceInfo.ns, wi)) / pdf;
-			}		
+			}*/
+
+			// Furnace Test
+			const int N = 16;
+			const float pdf = 1 / (2 * PI);
+			const float fr = 1.0f / PI;
+			for (uint32_t n = 0; n < N; ++n) {
+				float r1 = sampler.getNext1D(); // cos(theta) = N.Light Direction
+				float r2 = sampler.getNext1D();
+				Vec3f sample = uniformSampleHemisphere(r1, r2);
+				Vec3f sampleWorld(
+					sample[0] * info.surfaceInfo.dpdu[0] + sample[1] * info.surfaceInfo.ng[0] + sample[2] * info.surfaceInfo.dpdv[0],
+					sample[0] * info.surfaceInfo.dpdu[1] + sample[1] * info.surfaceInfo.ng[1] + sample[2] * info.surfaceInfo.dpdv[1],
+					sample[0] * info.surfaceInfo.dpdu[2] + sample[1] * info.surfaceInfo.ng[2] + sample[2] * info.surfaceInfo.dpdv[2]);
+				// Li multiply by cos(theta)
+				radiance += r1 * 1.0f;
+			}
+			// indirectDiffuse*fr*albedo/N/pdf
+			radiance *= 2 * info.hitObject->albedo() / N;
 		}
 
 		return radiance;
@@ -200,6 +230,113 @@ public:
 
 		return radiance;
 	}
+};
+
+
+class IndirectIntegrator : public PathIntegrator
+{
+public:
+	IndirectIntegrator(const std::shared_ptr<Camera>& camera, int maxDepth)
+		: m_maxDepth(maxDepth), PathIntegrator(camera, 16) {
+	}
+	virtual ~IndirectIntegrator() = default;
+
+	Vec3f integrate(const Ray & ray_in, const Scene & scene,
+		Sampler & sampler) const override
+	{
+		Vec3f radiance(0.0f);
+		Ray ray = ray_in;
+		ray.throughput = Vec3f(1, 1, 1);
+		Vec3f background(1.0f);
+
+		uint32_t depth = 0;
+		while (depth < m_maxDepth)
+		{
+			IntersectInfo info;
+			if (!scene.intersect(ray, info))
+			{
+				radiance += ray.throughput * background;
+				break;
+			}
+
+			// diffuse:pdf = 1 / (2 * PI);fr = 1.0f / PI;
+			if (info.hitObject->material() == 1)
+			{
+				// indirect light
+				Vec3f indirectLigthing(0.0f);
+				float r1 = sampler.getNext1D(); // cos(theta) = N.Light Direction
+				float r2 = sampler.getNext1D();
+				Vec3f sample = uniformSampleHemisphere(r1, r2);
+				Vec3f sampleWorld(
+					sample[0] * info.surfaceInfo.dpdu[0] + sample[1] * info.surfaceInfo.ng[0] + sample[2] * info.surfaceInfo.dpdv[0],
+					sample[0] * info.surfaceInfo.dpdu[1] + sample[1] * info.surfaceInfo.ng[1] + sample[2] * info.surfaceInfo.dpdv[1],
+					sample[0] * info.surfaceInfo.dpdu[2] + sample[1] * info.surfaceInfo.ng[2] + sample[2] * info.surfaceInfo.dpdv[2]);
+				// Li multiply by cos(theta)
+				indirectLigthing += r1 * 1.0f;
+
+				// Li*cos(theta)*fr*albedo/N/pdf
+				ray.throughput *= 2 * info.hitObject->albedo() * r1;
+				ray.origin = info.surfaceInfo.position;
+				ray.direction = sampleWorld;
+			}
+
+			depth++;
+
+// 			// russian roulette
+// 			if (depth > 0) {
+// 				const float russian_roulette_prob = std::min(
+// 					(ray.throughput[0] + ray.throughput[1] + ray.throughput[2]) /
+// 					3.0f,
+// 					1.0f);
+// 				if (sampler.getNext1D() >= russian_roulette_prob) { break; }
+// 				ray.throughput /= russian_roulette_prob;
+// 			}
+
+// 			// Le
+// 			if (info.hitObject->material() == 3) {
+// 				radiance += ray.throughput *
+// 					info.hitObject->Le(info.surfaceInfo, -ray.direction);
+// 				break;
+// 			}
+// 
+// 			// diffuse,半球采样、更新throughput
+// 			if (info.hitObject->material() == 1) {
+// 				float pdf_dir;
+// 				const Vec3f f = info.hitObject->sampleBxDF(
+// 					-ray.direction, info.surfaceInfo,
+// 					TransportDirection::FROM_CAMERA, sampler, dir, pdf_dir);
+// 
+// 				// update throughput
+// 				ray.throughput *= f *
+// 					cosTerm(-ray.direction, dir, info.surfaceInfo,
+// 						TransportDirection::FROM_CAMERA) /
+// 					pdf_dir;
+// 
+// 				depth++;
+// 
+// 				// update ray
+// 				ray.origin = info.surfaceInfo.position;
+// 				ray.direction = dir;
+// 			}
+		}
+
+		return radiance;
+	}
+protected:
+private:
+	Vec3f uniformSampleHemisphere(const float& r1, const float& r2) const
+	{
+		// cos(theta) = u1 = y
+		// cos^2(theta) + sin^2(theta) = 1 -> sin(theta) = srtf(1 - cos^2(theta))
+		float sinTheta = sqrtf(1 - r1 * r1);
+		float phi = 2 * PI * r2;
+		float x = sinTheta * cosf(phi);
+		float z = sinTheta * sinf(phi);
+		return Vec3f(x, r1, z);
+	}
+
+private:
+	const uint32_t m_maxDepth;
 };
 
 class WhittedIntegrator : public PathIntegrator

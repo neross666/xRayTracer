@@ -174,7 +174,7 @@ public:
 
 
         Matrix44<float> xfm_sphere(.2, 0, 0, 0, 0, .2, 0, 0, 0, 0, .2, 0, 0, 0, -4, 1);
-        std::shared_ptr<SphereLight> sphere_light = std::make_shared<SphereLight>(Vec3f(0.0f), 0.2f, xfm_sphere, 20);        
+        std::shared_ptr<SphereLight> sphere_light = std::make_shared<SphereLight>(Vec3f(0.0f), 0.2f, xfm_sphere, Vec3f(20.0f));        
 
         m_areaLights.push_back(sphere_light);
         addObj("SphereLight", sphere_light->getObject());

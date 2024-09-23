@@ -69,25 +69,26 @@ int main(int argc, char** argv)
 		0, 0, 3.0, 1);
 	const float FOV = 60.0f;	
 	const auto camera =
-		std::make_shared<PinholeCamera>(aspect_ratio, c2w, FOV);
+		std::make_shared<PinholeCamera>(aspect_ratio, c2w1, FOV);
 
 	// build scene
 	Scene scene;
 	std::string dataDir = DATA_DIR;
-	scene.loadObj(dataDir + "triangleLight.obj");
-	//scene.addObj("sphere_mesh", std::make_shared<SphereMesh>(Vec3f(0.0), 1.0f, 10, 10, 0, Vec3f(1.0, 1.0, 1.0)));
+	//scene.loadObj(dataDir + "triangleLight.obj");
+	scene.addObj("sphere_mesh", std::make_shared<SphereMesh>(Vec3f(0.0), 1.0f, 10, 10, 1, Vec3f(0.18f)));
 	//scene.loadObj(dataDir + "cube.obj");
 	//scene.addObj("sphere_diffuse", std::make_shared<Sphere>(Vec3f(0.0), 1.0f, 0, Vec3f(1.0, 1.0, 1.0)));
 	//scene.addObj("sphere_mirror", std::make_shared<Sphere>(Vec3f(1.5), 1.0f, 1, Vec3f(0.0, 1.0, 0.0)));
 	//scene.addObj("sphere_dielectric", std::make_shared<Sphere>(Vec3f(-1.0, 1.0, -1.0), 1.0f, 0, Vec3f(0.0, 0.0, 1.0)));
 	//scene.makeDeltaLight();
 
-	scene.makeAreaLight();
+	//scene.makeAreaLight();
 
 
 	// render
 	UniformSampler sampler;
-	DirectIntegrator integrator(camera);
+	IndirectIntegrator integrator(camera,3);
+	//DirectIntegrator integrator(camera);
 	//WhittedIntegrator integrator(camera);
 	//NormalIntegrator integrator(camera);
 	//PathTracing integrator(camera, 100, 10);
