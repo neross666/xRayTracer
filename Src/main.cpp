@@ -43,6 +43,17 @@ void makeCube()
 }
 
 
+std::string getCurrentDateTime()
+{
+	auto now = std::chrono::system_clock::now();
+	std::time_t now_time_t = std::chrono::system_clock::to_time_t(now);
+	std::tm now_tm = *std::localtime(&now_time_t);
+
+	std::stringstream ss;
+	ss << std::put_time(&now_tm, "%Y-%m-%d_%H-%M-%S");
+	return ss.str();
+}
+
 int main(int argc, char** argv)
 {
 	//makeSpere();
@@ -69,13 +80,13 @@ int main(int argc, char** argv)
 		0, 0, 3.0, 1);
 	const float FOV = 60.0f;	
 	const auto camera =
-		std::make_shared<PinholeCamera>(aspect_ratio, c2w1, FOV);
+		std::make_shared<PinholeCamera>(aspect_ratio, c2w, FOV);
 
 	// build scene
 	Scene scene;
 	std::string dataDir = DATA_DIR;
-	//scene.loadObj(dataDir + "triangleLight.obj");
-	scene.addObj("sphere_mesh", std::make_shared<SphereMesh>(Vec3f(0.0), 1.0f, 10, 10, 1, Vec3f(0.18f)));
+	scene.loadObj(dataDir + "triangleLight.obj");
+	//scene.addObj("sphere_mesh", std::make_shared<SphereMesh>(Vec3f(0.0), 1.0f, 10, 10, 1, Vec3f(0.18f)));
 	//scene.loadObj(dataDir + "cube.obj");
 	//scene.addObj("sphere_diffuse", std::make_shared<Sphere>(Vec3f(0.0), 1.0f, 0, Vec3f(1.0, 1.0, 1.0)));
 	//scene.addObj("sphere_mirror", std::make_shared<Sphere>(Vec3f(1.5), 1.0f, 1, Vec3f(0.0, 1.0, 0.0)));
@@ -87,7 +98,7 @@ int main(int argc, char** argv)
 
 	// render
 	UniformSampler sampler;
-	IndirectIntegrator integrator(camera,3);
+	IndirectIntegrator integrator(camera, 8);
 	//DirectIntegrator integrator(camera);
 	//WhittedIntegrator integrator(camera);
 	//NormalIntegrator integrator(camera);
@@ -101,8 +112,8 @@ int main(int argc, char** argv)
 	auto output = image.writeMat();
 	cv::imshow("output", output);
 	cv::waitKey(0);
-
-	cv::imwrite("xRayTracer.jpg", output);
+		
+	cv::imwrite(getCurrentDateTime() + "-xRayTracer.jpg", output);
 
 	return 0;
 }

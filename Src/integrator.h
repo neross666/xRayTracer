@@ -46,7 +46,7 @@ public:
 
 		spdlog::info("[PathIntegrator] rendering...");
 #pragma omp parallel for collapse(2) schedule(dynamic, 1)
-		for (uint32_t i = 52; i < height; ++i) 
+		for (uint32_t i = 0; i < height; ++i) 
 		{
 			for (uint32_t j = 0; j < width; ++j) 
 			{
@@ -259,11 +259,26 @@ public:
 				break;
 			}
 
+			// russian roulette
+			if (depth > 0) {
+				const float russian_roulette_prob = std::min(
+					(ray.throughput[0] + ray.throughput[1] + ray.throughput[2]) /
+					3.0f,
+					1.0f);
+				if (sampler.getNext1D() >= russian_roulette_prob) { break; }
+				ray.throughput /= russian_roulette_prob;
+			}
+
+			// Le
+// 			if (info.hitObject->material() == 3)
+// 			{
+// 				radiance += ray.throughput *
+// 					info.hitObject->Le(info.surfaceInfo, -ray.direction);
+// 			}
+
 			// diffuse:pdf = 1 / (2 * PI);fr = 1.0f / PI;
-			if (info.hitObject->material() == 1)
+			if (info.hitObject->material() == 0)
 			{
-				// indirect light
-				Vec3f indirectLigthing(0.0f);
 				float r1 = sampler.getNext1D(); // cos(theta) = N.Light Direction
 				float r2 = sampler.getNext1D();
 				Vec3f sample = uniformSampleHemisphere(r1, r2);
@@ -271,10 +286,8 @@ public:
 					sample[0] * info.surfaceInfo.dpdu[0] + sample[1] * info.surfaceInfo.ng[0] + sample[2] * info.surfaceInfo.dpdv[0],
 					sample[0] * info.surfaceInfo.dpdu[1] + sample[1] * info.surfaceInfo.ng[1] + sample[2] * info.surfaceInfo.dpdv[1],
 					sample[0] * info.surfaceInfo.dpdu[2] + sample[1] * info.surfaceInfo.ng[2] + sample[2] * info.surfaceInfo.dpdv[2]);
-				// Li multiply by cos(theta)
-				indirectLigthing += r1 * 1.0f;
-
-				// Li*cos(theta)*fr*albedo/N/pdf
+				
+				// Li*cos(theta)*fr*albedo/N/pdf   /distance^2?
 				ray.throughput *= 2 * info.hitObject->albedo() * r1;
 				ray.origin = info.surfaceInfo.position;
 				ray.direction = sampleWorld;
