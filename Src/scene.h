@@ -39,6 +39,11 @@ public:
         auto& shapes = reader.GetShapes();
         auto& materials = reader.GetMaterials();
 
+        for (size_t s = 0; s < materials.size(); s++) {
+            m_material.push_back(std::make_shared<Lambert>(0.78f/*1.0f*/)); /*Material::makeMaterial(material)*/
+        }
+
+
         // Loop over shapes
         for (size_t s = 0; s < shapes.size(); s++) {
             // Loop over faces(polygon)
@@ -95,25 +100,20 @@ public:
                     texcoords.push_back(Vec2f(1, 0));
                     texcoords.push_back(Vec2f(0, 1));
                 }
-
-                primitives.emplace_back(Primitive(vertices, normals, texcoords));
-
-                
+                                                
                 // material ID of current face
                 const int mID = shapes[s].mesh.material_ids[f];
-                if (materialID != mID)
-                {
-                    if (materialID != -1){
-                        spdlog::warn("[Scene] Multiple materials in one object. {}", materials[materialID].name);
-                    }else{
-                        materialID = mID;
-                    }					
-                }               
+				Material* material = nullptr;
+				if (mID != -1) 
+                    material = m_material[mID].get();
+
+				primitives.emplace_back(Primitive(vertices, normals, texcoords, material, nullptr));
 
                 index_offset += fv;
             }
             
-            m_objects[shapes[s].name] = std::make_shared<Mesh>(primitives, materialID);
+
+            m_objects[shapes[s].name] = std::make_shared<Mesh>(primitives);
         }
 
 	}
@@ -134,7 +134,7 @@ public:
             0.0, 1.0, 0.0, 0.0, 
             0.0, 0.0, 0.0, 1.0);*/
         Matrix44f l2w(0.95292, 0.289503, 0.0901785, 0, -0.0960954, 0.5704, -0.815727, 0, -0.287593, 0.768656, 0.571365, 0, 0, 0, 0, 1);
-        //m_deltaLights.push_back(std::make_shared<DistantLight>(l2w, Vec3f(1.0, 1.0, 1.0), 1.0f));
+        m_deltaLights.push_back(std::make_shared<DistantLight>(l2w, Vec3f(1.0, 1.0, 1.0), 1.0f));
 
         Matrix44f l2w2(
             1.0, 0.0, 0.0, 0.0,
@@ -151,7 +151,7 @@ public:
             0.0, 0.0, 1.0, 0.0,
             0.0, 0.0, 2.0, 1.0);
         //m_deltaLights.push_back(std::make_shared<PointLight>(l2w3, Vec3f(0.63, 0.33, 0.03), 2.0));
-        m_deltaLights.push_back(std::make_shared<PointLight>(l2w3, Vec3f(1.0, 1.0, 1.0), 2.0f));
+        //m_deltaLights.push_back(std::make_shared<PointLight>(l2w3, Vec3f(1.0, 1.0, 1.0), 2.0f));
     }
 
     void makeAreaLight() {
@@ -174,7 +174,7 @@ public:
 
 
         Matrix44<float> xfm_sphere(.2, 0, 0, 0, 0, .2, 0, 0, 0, 0, .2, 0, 0, 0, -4, 1);
-        std::shared_ptr<SphereLight> sphere_light = std::make_shared<SphereLight>(Vec3f(0.0f), 0.2f, xfm_sphere, Vec3f(20.0f));        
+        std::shared_ptr<SphereLight> sphere_light = std::make_shared<SphereLight>(Vec3f(0.0f), 0.2f, xfm_sphere, Vec3f(10.0f));
 
         m_areaLights.push_back(sphere_light);
         addObj("SphereLight", sphere_light->getObject());
@@ -206,19 +206,21 @@ public:
     {
         for (const auto& [name, obj] : m_objects)
         {
-            if (obj->occluded(ray, t_max) && obj->material() != 3)
+            if (obj->occluded(ray, t_max)/* && obj->material() != 3*/)
                 return true;
         }
 
         return false;
     }
 
-
 protected:
 private:    
 	std::vector<std::shared_ptr<DeltaLight>> m_deltaLights;
     std::vector<std::shared_ptr<AreaLight>> m_areaLights;
 	std::unordered_map<std::string, std::shared_ptr<Object>> m_objects;
+    std::vector<std::shared_ptr<Material>> m_material;
+
+
 };
 
  

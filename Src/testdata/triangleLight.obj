@@ -27,7 +27,7 @@ v  0  1 -5
 f -3 -2 -1
 
 o triangle_light
-usemtl light
+usemtl diffuse
 v -1 -1 0
 v  1 -1 0
 v -1  1 0

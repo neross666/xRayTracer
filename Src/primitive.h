@@ -1,14 +1,24 @@
 #pragma once
+#include <vector>
+#include "material.h"
+#include "ray.h"
 
+class AreaLight;
 class Primitive
 {
 public:
-	Primitive(const std::vector<Vec3f>& vertices, const std::vector<Vec3f>& normals, const std::vector<Vec2f>& texcoords) :
-		m_vertices(vertices), m_normals(normals), m_texcoords(texcoords) {
-	}
-	Primitive(std::vector<Vec3f>&& vertices, std::vector<Vec3f>&& normals, std::vector<Vec2f>&& texcoords) : 
-		m_vertices(vertices), m_normals(normals), m_texcoords(texcoords) {
-	}
+	Primitive(
+		const std::vector<Vec3f>& vertices, 
+		const std::vector<Vec3f>& normals, 
+		const std::vector<Vec2f>& texcoords,
+		Material* material,
+		AreaLight* light);
+	Primitive(
+		std::vector<Vec3f>&& vertices, 
+		std::vector<Vec3f>&& normals, 
+		std::vector<Vec2f>&& texcoords,
+		Material* material,
+		AreaLight* light);
 	~Primitive() = default;
 
 	const std::vector<Vec3f>& vertices() const {
@@ -23,49 +33,45 @@ public:
 		return m_texcoords;
 	}
 
+	bool hasSurface() const { 
+		return m_material != nullptr; 
+	}
+
+	bool hasAreaLight() const { 
+		return m_areaLight != nullptr; 
+	}
+
+	Material::MaterialType materialType() const;
+
+	Vec3f evaluate() const;
+
+	Vec3f Le(const SurfaceInfo& info, const Vec3f& wi) const;
+
 private:
 	std::vector<Vec3f> m_vertices;
 	std::vector<Vec3f> m_normals;
 	std::vector<Vec2f> m_texcoords;
+	Material* m_material = nullptr;
+	AreaLight* m_areaLight = nullptr;
 };
 
 class Object
 {
 public:
 	Object() = default;
-	Object(int materialID, Vec3f albedo)
-		: m_materialID(materialID), m_albedo(albedo) {
-
-	}
 
 	virtual ~Object() = default;
 
 	virtual bool intersect(const Ray& ray, IntersectInfo& info) const = 0;
 
-	virtual bool occluded(const Ray& ray, float t_max) const = 0;
-	
-	Vec3f albedo() const {
-		return m_albedo;
-	}
-
-	float ior() const {
-		return 1.3f;
-	}
-
-	int material() const{
-		return m_materialID;
-	}
-
-private:
-	const int m_materialID = -1;
-	Vec3f m_albedo;
+	virtual bool occluded(const Ray& ray, float t_max) const = 0;	
 };
 
 class Sphere : public Object
 {
 public:
-	Sphere(Vec3f center, float raduis, int materialID, Vec3f albedo = Vec3f(1.0f))
-		: m_center(center), m_raduis(raduis), m_raduis2(raduis*raduis), Object(materialID, albedo) {
+	Sphere(Vec3f center, float raduis)
+		: m_center(center), m_raduis(raduis), m_raduis2(raduis*raduis), Object() {
 
 	}
 	~Sphere() = default;
@@ -85,7 +91,7 @@ public:
 			info.surfaceInfo.texcoords = Vec2f(
 				(1 + atan2(info.surfaceInfo.ng[2], info.surfaceInfo.ng[0]) / PI) * 0.5,
 				acosf(info.surfaceInfo.ng[1]) / PI);
-			info.hitObject = this;
+			info.hitPrimitive = nullptr/*this*/;
 		}
 		return true;
 	}
@@ -155,104 +161,23 @@ class Mesh : public Object
 {
 public:
 	Mesh() = default;
-	Mesh(int materialID, Vec3f albedo = Vec3f(1.0f)) : Object(materialID, albedo) {}
-	Mesh(std::vector<Primitive>&& primitives, int materialID, Vec3f albedo = Vec3f(1.0f))
-		: Object(materialID, albedo), m_primitives(primitives) {
-
+	Mesh(std::vector<Primitive>&& primitives)
+		: m_primitives(primitives) {
 	}
-	Mesh(const std::vector<Primitive>& primitives, int materialID, Vec3f albedo = Vec3f(1.0f))
-		: Object(materialID, albedo), m_primitives(primitives) {
-
+	Mesh(const std::vector<Primitive>& primitives)
+		: m_primitives(primitives) {
 	}
 	~Mesh() = default;
 
-	bool intersect(const Ray& ray, IntersectInfo& info) const override
-	{
-		bool isIntersect = false;
-		for (auto& primitive : m_primitives)
-		{
-			const auto vertices = primitive.vertices();	
-			const auto normals = primitive.normals();
-			const auto texcoords = primitive.texcoords();
-			float t = 0.0f;
-			float u = 0.0f;
-			float v = 0.0f;
-			bool rst = rayTriangleIntersect(ray.origin, ray.direction,
-				vertices[0], vertices[1], vertices[2],
-				t, u, v);
-			if (rst)
-			{
-				isIntersect = true;
-				if (t < info.t)
-				{
-					info.t = t;
-					info.surfaceInfo.position = ray(t);
-					info.surfaceInfo.barycentric = Vec2f(u, v);
-					info.surfaceInfo.texcoords = texcoords[0] * (1.0f - u - v) + texcoords[1] * u + texcoords[2] * v;
-					info.surfaceInfo.ng = normalize(cross(vertices[1] - vertices[0], vertices[2] - vertices[0]));
-					info.surfaceInfo.ns = normals[0] * (1.0f - u - v) + normals[1] * u + normals[2] * v;
-					orthonormalBasis(info.surfaceInfo.ns, info.surfaceInfo.dpdu,
-						info.surfaceInfo.dpdv);
-					info.hitObject = this;
-				}
-			}
-		}
+	bool intersect(const Ray& ray, IntersectInfo& info) const override;
 
-		return isIntersect;
-	}
-
-	bool occluded(const Ray& ray, float t_max) const override
-	{
-		for (auto& primitive : m_primitives)
-		{
-			const auto vertices = primitive.vertices();
-			const auto normals = primitive.normals();
-			const auto texcoords = primitive.texcoords();
-			float t = 0.0f;
-			float u = 0.0f;
-			float v = 0.0f;
-			bool rst = rayTriangleIntersect(ray.origin, ray.direction,
-				vertices[0], vertices[1], vertices[2],
-				t, u, v);
-			if (rst && t < t_max)
-				return true;
-		}
-		return false;
-	}
+	bool occluded(const Ray& ray, float t_max) const override;
 
 private:
 	bool rayTriangleIntersect(
 		const Vec3f& orig, const Vec3f& dir,
 		const Vec3f& v0, const Vec3f& v1, const Vec3f& v2,
-		float& t, float& u, float& v) const
-	{
-		Vec3f v0v1 = v1 - v0;
-		Vec3f v0v2 = v2 - v0;
-		Vec3f pvec = cross(dir, v0v2);
-		float det = dot(v0v1, pvec);
-
-#ifdef CULLING  // 当考虑折射时，打开面剔除，会导致光线无法从电介质中穿出
-		// if the determinant is negative the triangle is backfacing
-		// if the determinant is close to 0, the ray misses the triangle
-		if (det < kEpsilon) return false;
-#else
-		// ray and triangle are parallel if det is close to 0
-		if (fabs(det) < kEpsilon) return false;
-#endif
-		float invDet = 1 / det;
-
-		Vec3f tvec = orig - v0;
-		u = dot(tvec, pvec) * invDet;
-		if (u < 0 || u > 1) return false;
-
-		Vec3f qvec = cross(tvec, v0v1);
-		v = dot(dir, qvec) * invDet;
-		if (v < 0 || u + v > 1) return false;
-
-		t = dot(v0v2, qvec) * invDet;
-
-		return t > kEpsilon;
-	}
+		float& t, float& u, float& v) const;
 
 protected:
 	std::vector<Primitive> m_primitives;
@@ -260,46 +185,13 @@ protected:
 
 class SphereMesh : public Mesh {
 public:
-	SphereMesh(Vec3f center, float radius, int thetaResolution, int phiResolution, int materialID, Vec3f albedo = Vec3f(1.0f))
-		: center_(center), radius_(radius), num_theta_(thetaResolution), num_phi_(phiResolution),Mesh(materialID, albedo) {
-		Triangulate();
+	SphereMesh(Vec3f center, float radius, int thetaResolution, int phiResolution, Material* mt, AreaLight* light)
+		: center_(center), radius_(radius), num_theta_(thetaResolution), num_phi_(phiResolution) {
+		Triangulate(mt, light);
 	}
 
 private:	
-	void Triangulate()
-	{
-		std::vector<Vec3f> vertices;
-		std::vector<Vec3f> normals;
-
-		// vertices
-		for (int i = 0; i <= num_theta_; ++i) {
-			float theta = PI * i / num_theta_;
-			for (int j = 0; j <= num_phi_; ++j) {
-				float phi = 2 * PI * j / num_phi_;
-
-				Vec3f vertex = { sin(theta) * sin(phi), cos(theta), sin(theta) * cos(phi) };
-				vertices.push_back(center_ + radius_ * vertex);
-				normals.push_back(vertex);
-			}
-		}
-
-		// triangle
-		for (int i = 0; i < num_theta_; ++i) {
-			for (int j = 0; j < num_phi_; ++j) {
-				int first = (i * (num_phi_ + 1)) + j;
-				int second = first + num_phi_ + 1;
-
-				m_primitives.push_back(Primitive(
-					{ vertices[first],vertices[second],vertices[first + 1u] },
-					{ normals[first],normals[second],normals[first + 1u] },
-					{ Vec2f(0,0),Vec2f(1,0),Vec2f(0,1) }));
-				m_primitives.push_back(Primitive(
-					{ vertices[second],vertices[second + 1u],vertices[first + 1u] },
-					{ normals[second],normals[second + 1u],normals[first + 1u] },
-					{ Vec2f(0,0),Vec2f(1,0),Vec2f(0,1) }));
-			}
-		}
-	}
+	void Triangulate(Material* mt, AreaLight* light);
 
 
 private:

@@ -46,9 +46,9 @@ public:
 
 		spdlog::info("[PathIntegrator] rendering...");
 #pragma omp parallel for collapse(2) schedule(dynamic, 1)
-		for (uint32_t i = 0; i < height; ++i) 
+		for (uint32_t i = 0/*50*/; i < height; ++i) 
 		{
-			for (uint32_t j = 0; j < width; ++j) 
+			for (uint32_t j = 0/*170*/; j < width; ++j) 
 			{
 				// init sampler for each pixel
 				const std::unique_ptr<Sampler> sampler_per_pixel = sampler.clone();
@@ -58,7 +58,7 @@ public:
 				sampler_per_pixel->discard(10);
 
 				// iteration
-				for (uint32_t k = 0; k < n_samples; ++k) {
+				for (uint32_t k = 0/*6*/; k < n_samples; ++k) {
 					// SSAA
 					const float u =
 						(j + sampler_per_pixel->getNext1D()) / width;
@@ -111,8 +111,8 @@ public:
 class NormalIntegrator : public PathIntegrator
 {
 public:
-	NormalIntegrator(const std::shared_ptr<Camera>& camera)
-		: PathIntegrator(camera, 1) {
+	NormalIntegrator(const std::shared_ptr<Camera>& camera, uint32_t n_samples = 1)
+		: PathIntegrator(camera, n_samples) {
 	}
 	virtual ~NormalIntegrator() = default;
 
@@ -144,26 +144,22 @@ public:
 				if (pdf == 0.0f)
 					continue;
 
-				radiance += vis * info.hitObject->albedo() / PI * light_L * std::max(0.f, dot(info.surfaceInfo.ns, wi)) / pdf;
+				radiance += vis * info.hitPrimitive->evaluate() / PI * light_L * std::max(0.f, dot(info.surfaceInfo.ns, wi)) / pdf;
 			}*/
 
 			// Furnace Test
-			const int N = 16;
-			const float pdf = 1 / (2 * PI);
-			const float fr = 1.0f / PI;
-			for (uint32_t n = 0; n < N; ++n) {
-				float r1 = sampler.getNext1D(); // cos(theta) = N.Light Direction
-				float r2 = sampler.getNext1D();
-				Vec3f sample = uniformSampleHemisphere(r1, r2);
-				Vec3f sampleWorld(
-					sample[0] * info.surfaceInfo.dpdu[0] + sample[1] * info.surfaceInfo.ng[0] + sample[2] * info.surfaceInfo.dpdv[0],
-					sample[0] * info.surfaceInfo.dpdu[1] + sample[1] * info.surfaceInfo.ng[1] + sample[2] * info.surfaceInfo.dpdv[1],
-					sample[0] * info.surfaceInfo.dpdu[2] + sample[1] * info.surfaceInfo.ng[2] + sample[2] * info.surfaceInfo.dpdv[2]);
-				// Li multiply by cos(theta)
-				radiance += r1 * 1.0f;
-			}
+			//const float pdf = 1 / (2 * PI);
+			//const float fr = 1.0f / PI;			
+			float r1 = sampler.getNext1D(); // cos(theta) = N.Light Direction
+			float r2 = sampler.getNext1D();
+			Vec3f sample = uniformSampleHemisphere(r1, r2);
+			Vec3f sampleWorld(
+				sample[0] * info.surfaceInfo.dpdu[0] + sample[1] * info.surfaceInfo.ng[0] + sample[2] * info.surfaceInfo.dpdv[0],
+				sample[0] * info.surfaceInfo.dpdu[1] + sample[1] * info.surfaceInfo.ng[1] + sample[2] * info.surfaceInfo.dpdv[1],
+				sample[0] * info.surfaceInfo.dpdu[2] + sample[1] * info.surfaceInfo.ng[2] + sample[2] * info.surfaceInfo.dpdv[2]);
+						
 			// indirectDiffuse*fr*albedo/N/pdf
-			radiance *= 2 * info.hitObject->albedo() / N;
+			radiance = 2 * info.hitPrimitive->evaluate() * r1 * 1.0f;
 		}
 
 		return radiance;
@@ -176,8 +172,8 @@ private:
 class DirectIntegrator : public PathIntegrator
 {
 public:
-	DirectIntegrator(const std::shared_ptr<Camera>& camera)
-		: PathIntegrator(camera, 1) {
+	DirectIntegrator(const std::shared_ptr<Camera>& camera, uint32_t n_samples)
+		: PathIntegrator(camera, n_samples) {
 	}
 	virtual ~DirectIntegrator() = default;
 
@@ -188,38 +184,29 @@ public:
 		IntersectInfo info;
 		if (scene.intersect(ray_in, info))
 		{
-			switch (info.hitObject->material())
+			// ideal diffuse
+			if (info.hitPrimitive->materialType() == Material::MaterialType::Lambert)
 			{
-			case 0:// ideal diffuse
-			{
-				size_t num_samples = 16;
 				for (const auto& light : scene.getAreaLights())
 				{
-					Vec3f L_light = 0;
-					for (size_t n = 0; n < num_samples; ++n) {
-						Vec3f wi;
-						float tmax, pdf = 0.0f;
-						Vec3f L = light->sample(info, wi, pdf, tmax, sampler);
+					Vec3f wi;
+					float tmax, pdf = 0.0f;
+					Vec3f L = light->sample(info, wi, pdf, tmax, sampler);
 
-						if (pdf == 0)
-							continue;
+					if (pdf == 0)
+						continue;
 
-						auto bias = 0.01f;
-						bool vis = !scene.occluded(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * bias, wi), tmax - bias);
+					auto bias = 0.01f;
+					bool vis = !scene.occluded(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * bias, wi), tmax - bias);
 
-						L_light += vis * info.hitObject->albedo() / PI * L * std::max(0.0f, dot(info.surfaceInfo.ng, wi)) / pdf;
-					}
-					radiance += L_light / num_samples;
+					radiance += vis * info.hitPrimitive->evaluate() / PI * L * std::max(0.0f, dot(info.surfaceInfo.ng, wi)) / pdf;
 				}
 			}
-				break;
-			case 3:// Light
+
+			// Light
+			if (info.hitPrimitive->hasAreaLight())
 			{
-				radiance += Vec3f(1.0)/*info.hitObject->Le()*/;
-			}
-				break;
-			default:
-				break;
+				radiance += info.hitPrimitive->Le(info.surfaceInfo, ray_in.direction);
 			}
 		}
 		else
@@ -232,12 +219,11 @@ public:
 	}
 };
 
-
 class IndirectIntegrator : public PathIntegrator
 {
 public:
-	IndirectIntegrator(const std::shared_ptr<Camera>& camera, int maxDepth)
-		: m_maxDepth(maxDepth), PathIntegrator(camera, 16) {
+	IndirectIntegrator(const std::shared_ptr<Camera>& camera, uint32_t n_samples, int maxDepth)
+		: m_maxDepth(maxDepth), PathIntegrator(camera, n_samples) {
 	}
 	virtual ~IndirectIntegrator() = default;
 
@@ -247,9 +233,10 @@ public:
 		Vec3f radiance(0.0f);
 		Ray ray = ray_in;
 		ray.throughput = Vec3f(1, 1, 1);
-		Vec3f background(1.0f);
+		Vec3f background(0.0f);
 
 		uint32_t depth = 0;
+		bool mainRay = true;
 		while (depth < m_maxDepth)
 		{
 			IntersectInfo info;
@@ -270,68 +257,168 @@ public:
 			}
 
 			// Le
-// 			if (info.hitObject->material() == 3)
-// 			{
-// 				radiance += ray.throughput *
-// 					info.hitObject->Le(info.surfaceInfo, -ray.direction);
-// 			}
+			if (info.hitPrimitive->hasAreaLight())
+			{
+				float rr = mainRay ? 1.0f : info.t * info.t;
+				radiance += ray.throughput *
+					info.hitPrimitive->Le(info.surfaceInfo, ray.direction) / std::max(1.0f, rr);
+				break;
+			}
 
 			// diffuse:pdf = 1 / (2 * PI);fr = 1.0f / PI;
-			if (info.hitObject->material() == 0)
+			if (info.hitPrimitive->materialType() == Material::MaterialType::Lambert)
 			{
+				// indirect light
 				float r1 = sampler.getNext1D(); // cos(theta) = N.Light Direction
 				float r2 = sampler.getNext1D();
 				Vec3f sample = uniformSampleHemisphere(r1, r2);
-				Vec3f sampleWorld(
+				Vec3f nextDir(
 					sample[0] * info.surfaceInfo.dpdu[0] + sample[1] * info.surfaceInfo.ng[0] + sample[2] * info.surfaceInfo.dpdv[0],
 					sample[0] * info.surfaceInfo.dpdu[1] + sample[1] * info.surfaceInfo.ng[1] + sample[2] * info.surfaceInfo.dpdv[1],
 					sample[0] * info.surfaceInfo.dpdu[2] + sample[1] * info.surfaceInfo.ng[2] + sample[2] * info.surfaceInfo.dpdv[2]);
-				
+
 				// Li*cos(theta)*fr*albedo/N/pdf   /distance^2?
-				ray.throughput *= 2 * info.hitObject->albedo() * r1;
-				ray.origin = info.surfaceInfo.position;
-				ray.direction = sampleWorld;
+				auto bias = 0.01f;
+				float rr = mainRay ? 1.0f : info.t * info.t;
+				ray.throughput *= 2 * info.hitPrimitive->evaluate() * r1 / std::max(1.0f, rr);
+				ray.origin = info.surfaceInfo.position + info.surfaceInfo.ng * bias;
+				ray.direction = nextDir;
+
+				mainRay = false;
 			}
 
 			depth++;
-
-// 			// russian roulette
-// 			if (depth > 0) {
-// 				const float russian_roulette_prob = std::min(
-// 					(ray.throughput[0] + ray.throughput[1] + ray.throughput[2]) /
-// 					3.0f,
-// 					1.0f);
-// 				if (sampler.getNext1D() >= russian_roulette_prob) { break; }
-// 				ray.throughput /= russian_roulette_prob;
-// 			}
-
-// 			// Le
-// 			if (info.hitObject->material() == 3) {
-// 				radiance += ray.throughput *
-// 					info.hitObject->Le(info.surfaceInfo, -ray.direction);
-// 				break;
-// 			}
-// 
-// 			// diffuse,半球采样、更新throughput
-// 			if (info.hitObject->material() == 1) {
-// 				float pdf_dir;
-// 				const Vec3f f = info.hitObject->sampleBxDF(
-// 					-ray.direction, info.surfaceInfo,
-// 					TransportDirection::FROM_CAMERA, sampler, dir, pdf_dir);
-// 
-// 				// update throughput
-// 				ray.throughput *= f *
-// 					cosTerm(-ray.direction, dir, info.surfaceInfo,
-// 						TransportDirection::FROM_CAMERA) /
-// 					pdf_dir;
-// 
-// 				depth++;
-// 
-// 				// update ray
-// 				ray.origin = info.surfaceInfo.position;
-// 				ray.direction = dir;
-// 			}
 		}
+
+
+// 		if (radiance[0] >= 1.0f)
+// 		{
+// 			spdlog::error("[PathIntegrator] radiance is minus: ({}, {}, {})",
+// 				radiance[0], radiance[1], radiance[2]);
+// 		}
+
+
+		return radiance;
+	}
+protected:
+private:
+	Vec3f uniformSampleHemisphere(const float& r1, const float& r2) const
+	{
+		// cos(theta) = u1 = y
+		// cos^2(theta) + sin^2(theta) = 1 -> sin(theta) = srtf(1 - cos^2(theta))
+		float sinTheta = sqrtf(1 - r1 * r1);
+		float phi = 2 * PI * r2;
+		float x = sinTheta * cosf(phi);
+		float z = sinTheta * sinf(phi);
+		return Vec3f(x, r1, z);
+	}
+
+private:
+	const uint32_t m_maxDepth;
+};
+
+class GIIntegrator : public PathIntegrator
+{
+public:
+	GIIntegrator(const std::shared_ptr<Camera>& camera, uint32_t n_samples, int maxDepth)
+		: m_maxDepth(maxDepth), PathIntegrator(camera, n_samples) {
+	}
+	virtual ~GIIntegrator() = default;
+
+	Vec3f integrate(const Ray& ray_in, const Scene& scene,
+		Sampler& sampler) const override
+	{
+		Vec3f radiance(0.0f);
+		Ray ray = ray_in;
+		ray.throughput = Vec3f(1, 1, 1);
+		Vec3f background(0.0f);
+
+		uint32_t depth = 0;
+		bool primaryRay = true;
+		while (depth < m_maxDepth)
+		{
+			IntersectInfo info;
+			if (!scene.intersect(ray, info))
+			{
+				radiance += ray.throughput * background;
+				break;
+			}
+
+			// russian roulette
+			if (depth > 0) {
+				const float russian_roulette_prob = std::min(
+					(ray.throughput[0] + ray.throughput[1] + ray.throughput[2]) /
+					3.0f,
+					1.0f);
+				if (sampler.getNext1D() >= russian_roulette_prob) { break; }
+				ray.throughput /= russian_roulette_prob;
+			}
+
+			// Le
+			if (info.hitPrimitive->hasAreaLight())
+			{
+				if (primaryRay)
+				{					
+					radiance += ray.throughput *
+						info.hitPrimitive->Le(info.surfaceInfo, ray.direction);
+				}				
+				break;
+			}
+
+			// diffuse:pdf = 1 / (2 * PI);fr = 1.0f / PI;
+			if (info.hitPrimitive->materialType() == Material::MaterialType::Lambert)
+			{
+				// direct light
+				Vec3f directL(0.0f);
+				for (const auto& light : scene.getAreaLights())
+				{
+					Vec3f L_light(0.0f);
+					Vec3f wi;
+					float tmax, pdf = 0.0f;
+					Vec3f L = light->sample(info, wi, pdf, tmax, sampler);
+
+					if (pdf == 0)
+						continue;
+
+					auto bias = 0.01f;
+					bool vis = !scene.occluded(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * bias, wi), tmax - bias);
+
+					L_light += vis * info.hitPrimitive->evaluate() / PI * L * std::max(0.0f, dot(info.surfaceInfo.ng, wi)) / pdf;
+
+					directL += L_light;
+				}
+				radiance += ray.throughput * directL;
+
+
+				// indirect light
+				float r1 = sampler.getNext1D(); // cos(theta) = N.Light Direction
+				float r2 = sampler.getNext1D();
+				Vec3f sample = uniformSampleHemisphere(r1, r2);
+				Vec3f nextDir(
+					sample[0] * info.surfaceInfo.dpdu[0] + sample[1] * info.surfaceInfo.ng[0] + sample[2] * info.surfaceInfo.dpdv[0],
+					sample[0] * info.surfaceInfo.dpdu[1] + sample[1] * info.surfaceInfo.ng[1] + sample[2] * info.surfaceInfo.dpdv[1],
+					sample[0] * info.surfaceInfo.dpdu[2] + sample[1] * info.surfaceInfo.ng[2] + sample[2] * info.surfaceInfo.dpdv[2]);
+
+				// Li*cos(theta)*fr*albedo/N/pdf   /distance^2?
+				auto bias = 0.01f;
+				float rr = primaryRay ? 1.0f : info.t * info.t;
+				ray.throughput *= 2 * info.hitPrimitive->evaluate() * r1 / std::max(1.0f, rr);
+				ray.origin = info.surfaceInfo.position + info.surfaceInfo.ng * bias;
+				ray.direction = nextDir;
+
+				primaryRay = false;
+			}
+
+			depth++;
+		}
+
+
+		// 		if (radiance[0] >= 1.0f)
+		// 		{
+		// 			spdlog::error("[PathIntegrator] radiance is minus: ({}, {}, {})",
+		// 				radiance[0], radiance[1], radiance[2]);
+		// 		}
+
 
 		return radiance;
 	}
@@ -384,9 +471,9 @@ public:
 			IntersectInfo info;
 			if (scene.intersect(ray, info))
 			{
-				switch (info.hitObject->material())
+				switch (info.hitPrimitive->materialType())
 				{
-				case 0:// diffuse
+				case Material::MaterialType::Lambert:// diffuse
 				{
 					Vec3f radiance(0);
 					for (const auto& light : scene.getDeltaLights())
@@ -395,14 +482,14 @@ public:
 						float t_max, pdf;
 						Vec3f light_L = light->sample(info, wi, pdf, t_max);
 						bool vis = !scene.occluded(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * 0.1, wi), t_max);
-						radiance += vis * info.hitObject->albedo() * light_L * std::max(0.f, dot(info.surfaceInfo.ns, wi)) / (PI * pdf);
+						radiance += vis * info.hitPrimitive->evaluate() * light_L * std::max(0.f, dot(info.surfaceInfo.ns, wi)) / (PI * pdf);
 					
 					}
 					radiance *= ray.throughput;
 					total_radiance += radiance;
 				}
 				break;
-				case 1:// mirror
+				case Material::MaterialType::Metals:// reflect
 				{
 					// reflect direction
 					Ray reflect_ray;
@@ -413,17 +500,17 @@ public:
 					rays.push(reflect_ray);
 				}
 				break;
-				case 2:// reflect and refract
+				case Material::MaterialType::Glass:// reflect and refract
 				{
 					// compute fresnel
 					float kr;
-					fresnel(ray.direction, info.surfaceInfo.ng, info.hitObject->ior(), kr);
+					fresnel(ray.direction, info.surfaceInfo.ng, 1.3/*info.hitPrimitive->ior()*/, kr);
 					bool outside = dot(ray.direction, info.surfaceInfo.ng) < 0;
 					Vec3f bias = /*options.bias*/0.001 * info.surfaceInfo.ng;
 					// compute refraction if it is not a case of total internal reflection
 					if (kr < 1) {
 						Ray refract_ray;
-						refract_ray.direction = normalize(refract(ray.direction, info.surfaceInfo.ng, info.hitObject->ior()));
+						refract_ray.direction = normalize(refract(ray.direction, info.surfaceInfo.ng, 1.3/*info.hitPrimitive->ior()*/));
 						refract_ray.origin = outside ? info.surfaceInfo.position - bias : info.surfaceInfo.position + bias;
 						refract_ray.throughput = 0.9*ray.throughput * (1 - kr);
 						refract_ray.depth = ray.depth + 1;
