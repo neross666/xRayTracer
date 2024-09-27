@@ -1,6 +1,7 @@
 #include "camera.h"
 #include "image.h"
 #include "integrator.h"
+#include "material.h"
 
 #include <vtkSmartPointer.h>
 #include <vtkSphereSource.h>
@@ -78,21 +79,26 @@ int main(int argc, char** argv)
 		0, 1.0, 0, 0,
 		0, 0, 1.0, 0,
 		0, 0, 3.0, 1);
+	const Matrix44f cornellbox(
+		-1.0, 0, 0, 0,
+		0, 1.0, 0, 0,
+		0, 0, -1.0, 0,
+		278, 274.4, -750.0, 1);
 	const float FOV = 60.0f;	
 	const auto camera =
-		std::make_shared<PinholeCamera>(aspect_ratio, c2w, FOV);
+		std::make_shared<PinholeCamera>(aspect_ratio, cornellbox, FOV);
 
 	const auto material = std::make_shared<Lambert>(Vec3f(0.18));
 
 	// build scene
 	Scene scene;
 	std::string dataDir = DATA_DIR;
-	scene.loadObj(dataDir + "triangleLight.obj");
+	scene.loadObj(dataDir + "cornell_box.obj");
 	//scene.addObj("sphere_mesh", std::make_shared<SphereMesh>(Vec3f(0.0), 1.0f, 10, 10, material.get(), nullptr));
 	//scene.loadObj(dataDir + "cube.obj");
-	//scene.addObj("sphere_diffuse", std::make_shared<Sphere>(Vec3f(0.0), 1.0f));
-	//scene.addObj("sphere_mirror", std::make_shared<Sphere>(Vec3f(1.5), 1.0f));
-	//scene.addObj("sphere_dielectric", std::make_shared<Sphere>(Vec3f(-1.0, 1.0, -1.0), 1.0f));
+	//scene.addObj("sphere_diffuse", std::make_shared<Sphere>(Vec3f(0.0), 1.0f, material.get(), nullptr));
+	//scene.addObj("sphere_mirror", std::make_shared<Sphere>(Vec3f(1.5), 1.0f, material.get(), nullptr));
+	//scene.addObj("sphere_dielectric", std::make_shared<Sphere>(Vec3f(-1.0, 1.0, -1.0), 1.0f, material.get(), nullptr));
 	//scene.makeDeltaLight();
 
 	scene.makeAreaLight();
@@ -100,11 +106,11 @@ int main(int argc, char** argv)
 
 	// render
 	UniformSampler sampler;
-	//NormalIntegrator integrator(camera, 16);
+	//NormalIntegrator integrator(camera, 1);
 	//WhittedIntegrator integrator(camera);
-	//DirectIntegrator integrator(camera, 16);
+	DirectIntegrator integrator(camera, 8);
 	//IndirectIntegrator integrator(camera, 512, 3);
-	GIIntegrator integrator(camera, 8, 3);
+	//GIIntegrator integrator(camera, 8, 3);
 	//PathTracing integrator(camera, 100, 10);
 	integrator.render(scene, sampler, image);
 

@@ -20,7 +20,9 @@ add_executable(xRayTracer
 	"light.cpp"
 	"primitive.cpp"
 	"geometry.cpp"
- "geometry.h" "camera.h" "ray.h" "sampler.h" "integrator.h" "image.h" "scene.h" "light.h" "primitive.h" "material.h" "geometry.cpp")
+	"material.cpp"
+	"scene.cpp"
+ "geometry.h" "camera.h" "ray.h" "sampler.h" "integrator.h" "image.h" "scene.h" "light.h" "primitive.h" "material.h" "geometry.cpp" "scene.cpp")
 
  target_compile_definitions(xRayTracer
     PRIVATE 

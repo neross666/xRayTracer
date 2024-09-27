@@ -30,9 +30,9 @@ struct SurfaceInfo {
 	Vec2f barycentric;
 };
 
-class Primitive;
+class Object;
 struct IntersectInfo {
 	float t = kInfinity;  // distance to the hit point
 	SurfaceInfo surfaceInfo;
-	const Primitive* hitPrimitive = nullptr;
+	const Object* hitObject = nullptr;
 };

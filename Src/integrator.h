@@ -55,7 +55,7 @@ public:
 				sampler_per_pixel->setSeed(j + width * i);
 				
 				// warmup sampler
-				sampler_per_pixel->discard(10);
+				//sampler_per_pixel->discard(2);
 
 				// iteration
 				for (uint32_t k = 0/*6*/; k < n_samples; ++k) {
@@ -101,7 +101,7 @@ public:
 
 			std::cout << "\rprogress: " << i << "/" << height;
 		}
-		spdlog::info("[PathIntegrator] done");
+		spdlog::info("\n[PathIntegrator] done");
 
 		// take average
 		image /= Vec3f(n_samples);
@@ -148,8 +148,8 @@ public:
 			}*/
 
 			// Furnace Test
-			//const float pdf = 1 / (2 * PI);
-			//const float fr = 1.0f / PI;			
+			const float pdf = 1 / (2 * PI);
+			const float fr = 1.0f / PI;			
 			float r1 = sampler.getNext1D(); // cos(theta) = N.Light Direction
 			float r2 = sampler.getNext1D();
 			Vec3f sample = uniformSampleHemisphere(r1, r2);
@@ -159,7 +159,7 @@ public:
 				sample[0] * info.surfaceInfo.dpdu[2] + sample[1] * info.surfaceInfo.ng[2] + sample[2] * info.surfaceInfo.dpdv[2]);
 						
 			// indirectDiffuse*fr*albedo/N/pdf
-			radiance = 2 * info.hitPrimitive->evaluate() * r1 * 1.0f;
+			radiance = 2 * info.hitObject->evaluate() * r1 * 1.0f;
 		}
 
 		return radiance;
@@ -185,7 +185,7 @@ public:
 		if (scene.intersect(ray_in, info))
 		{
 			// ideal diffuse
-			if (info.hitPrimitive->materialType() == Material::MaterialType::Lambert)
+			if (info.hitObject->materialType() == MaterialType::Lambert)
 			{
 				for (const auto& light : scene.getAreaLights())
 				{
@@ -199,14 +199,14 @@ public:
 					auto bias = 0.01f;
 					bool vis = !scene.occluded(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * bias, wi), tmax - bias);
 
-					radiance += vis * info.hitPrimitive->evaluate() / PI * L * std::max(0.0f, dot(info.surfaceInfo.ng, wi)) / pdf;
+					radiance += vis * info.hitObject->evaluate() / PI * L * std::max(0.0f, dot(info.surfaceInfo.ng, wi)) / pdf;
 				}
 			}
 
 			// Light
-			if (info.hitPrimitive->hasAreaLight())
+			if (info.hitObject->hasAreaLight())
 			{
-				radiance += info.hitPrimitive->Le(info.surfaceInfo, ray_in.direction);
+				radiance += info.hitObject->Le(info.surfaceInfo, ray_in.direction);
 			}
 		}
 		else
@@ -257,16 +257,16 @@ public:
 			}
 
 			// Le
-			if (info.hitPrimitive->hasAreaLight())
+			if (info.hitObject->hasAreaLight())
 			{
 				float rr = mainRay ? 1.0f : info.t * info.t;
 				radiance += ray.throughput *
-					info.hitPrimitive->Le(info.surfaceInfo, ray.direction) / std::max(1.0f, rr);
+					info.hitObject->Le(info.surfaceInfo, ray.direction) / std::max(1.0f, rr);
 				break;
 			}
 
 			// diffuse:pdf = 1 / (2 * PI);fr = 1.0f / PI;
-			if (info.hitPrimitive->materialType() == Material::MaterialType::Lambert)
+			if (info.hitObject->materialType() == MaterialType::Lambert)
 			{
 				// indirect light
 				float r1 = sampler.getNext1D(); // cos(theta) = N.Light Direction
@@ -280,7 +280,7 @@ public:
 				// Li*cos(theta)*fr*albedo/N/pdf   /distance^2?
 				auto bias = 0.01f;
 				float rr = mainRay ? 1.0f : info.t * info.t;
-				ray.throughput *= 2 * info.hitPrimitive->evaluate() * r1 / std::max(1.0f, rr);
+				ray.throughput *= 2 * info.hitObject->evaluate() * r1 / std::max(1.0f, rr);
 				ray.origin = info.surfaceInfo.position + info.surfaceInfo.ng * bias;
 				ray.direction = nextDir;
 
@@ -289,14 +289,6 @@ public:
 
 			depth++;
 		}
-
-
-// 		if (radiance[0] >= 1.0f)
-// 		{
-// 			spdlog::error("[PathIntegrator] radiance is minus: ({}, {}, {})",
-// 				radiance[0], radiance[1], radiance[2]);
-// 		}
-
 
 		return radiance;
 	}
@@ -355,18 +347,18 @@ public:
 			}
 
 			// Le
-			if (info.hitPrimitive->hasAreaLight())
+			if (info.hitObject->hasAreaLight())
 			{
 				if (primaryRay)
 				{					
 					radiance += ray.throughput *
-						info.hitPrimitive->Le(info.surfaceInfo, ray.direction);
+						info.hitObject->Le(info.surfaceInfo, ray.direction);
 				}				
 				break;
 			}
 
 			// diffuse:pdf = 1 / (2 * PI);fr = 1.0f / PI;
-			if (info.hitPrimitive->materialType() == Material::MaterialType::Lambert)
+			if (info.hitObject->materialType() == MaterialType::Lambert)
 			{
 				// direct light
 				Vec3f directL(0.0f);
@@ -383,12 +375,11 @@ public:
 					auto bias = 0.01f;
 					bool vis = !scene.occluded(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * bias, wi), tmax - bias);
 
-					L_light += vis * info.hitPrimitive->evaluate() / PI * L * std::max(0.0f, dot(info.surfaceInfo.ng, wi)) / pdf;
+					L_light += vis * info.hitObject->evaluate() / PI * L * std::max(0.0f, dot(info.surfaceInfo.ng, wi)) / pdf;
 
 					directL += L_light;
 				}
 				radiance += ray.throughput * directL;
-
 
 				// indirect light
 				float r1 = sampler.getNext1D(); // cos(theta) = N.Light Direction
@@ -402,7 +393,7 @@ public:
 				// Li*cos(theta)*fr*albedo/N/pdf   /distance^2?
 				auto bias = 0.01f;
 				float rr = primaryRay ? 1.0f : info.t * info.t;
-				ray.throughput *= 2 * info.hitPrimitive->evaluate() * r1 / std::max(1.0f, rr);
+				ray.throughput *= 2 * info.hitObject->evaluate() * r1 / std::max(1.0f, rr);
 				ray.origin = info.surfaceInfo.position + info.surfaceInfo.ng * bias;
 				ray.direction = nextDir;
 
@@ -471,9 +462,9 @@ public:
 			IntersectInfo info;
 			if (scene.intersect(ray, info))
 			{
-				switch (info.hitPrimitive->materialType())
+				switch (info.hitObject->materialType())
 				{
-				case Material::MaterialType::Lambert:// diffuse
+				case MaterialType::Lambert:// diffuse
 				{
 					Vec3f radiance(0);
 					for (const auto& light : scene.getDeltaLights())
@@ -482,14 +473,14 @@ public:
 						float t_max, pdf;
 						Vec3f light_L = light->sample(info, wi, pdf, t_max);
 						bool vis = !scene.occluded(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * 0.1, wi), t_max);
-						radiance += vis * info.hitPrimitive->evaluate() * light_L * std::max(0.f, dot(info.surfaceInfo.ns, wi)) / (PI * pdf);
+						radiance += vis * info.hitObject->evaluate() * light_L * std::max(0.f, dot(info.surfaceInfo.ns, wi)) / (PI * pdf);
 					
 					}
 					radiance *= ray.throughput;
 					total_radiance += radiance;
 				}
 				break;
-				case Material::MaterialType::Metals:// reflect
+				case MaterialType::Metals:// reflect
 				{
 					// reflect direction
 					Ray reflect_ray;
@@ -500,7 +491,7 @@ public:
 					rays.push(reflect_ray);
 				}
 				break;
-				case Material::MaterialType::Glass:// reflect and refract
+				case MaterialType::Glass:// reflect and refract
 				{
 					// compute fresnel
 					float kr;

@@ -2,6 +2,7 @@
 #include "geometry.h"
 #include "ray.h"
 #include "sampler.h"
+#include "primitive.h"
 
 
 // [comment]
@@ -48,9 +49,10 @@ public:
 };
 
 
-
+// treat light as emit-light materail?
 class Object;
-class AreaLight {
+class AreaLight/* : public Material*/
+{
 public:
     AreaLight(const Matrix44f& l2w, const Vec3f& Le) : lightToWorld(l2w), Le_(Le) {
     }
@@ -80,6 +82,7 @@ protected:
 class TriangleLight : public AreaLight
 {
 public:
+    TriangleLight(const Primitive& primitive, const Vec3f& Le);
     TriangleLight(const Vec3f& v0, const Vec3f& v1, const Vec3f& v2, const Matrix44f& l2w, const Vec3f& Le);
 
     Vec3f sample(const IntersectInfo& info, Vec3<float>& wi, float& pdf, float& tmax, Sampler& sample) const override;

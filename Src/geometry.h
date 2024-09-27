@@ -668,3 +668,6 @@ Vec3f refract(const Vec3f& I, const Vec3f& N, const float& ior);
 // Evaluate Fresnel equation (ration of reflected light for a given incident direction and surface normal)
 // [/comment]
 void fresnel(const Vec3f& I, const Vec3f& N, const float& ior, float& kr);
+
+
+enum class MaterialType { Lambert, Metals, Glass, Luminous, Unknow };
