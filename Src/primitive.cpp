@@ -35,6 +35,13 @@ Vec3f Object::evaluate() const
 	return m_material->evaluate();
 }
 
+Vec3f Object::sampleDir(const SurfaceInfo& sinfo, Sampler& sampler, float& pdf) const
+{
+	if (m_material == nullptr)
+		return Vec3f(0.0f);
+	return m_material->sampleDir(sinfo, sampler, pdf);
+}
+
 Vec3f Object::Le(const SurfaceInfo& info, const Vec3f& wi) const
 {
 	if (m_areaLight == nullptr)

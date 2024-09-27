@@ -10,18 +10,6 @@
 #include "light.h"
 
 
-Vec3f uniformSampleHemisphere(const float& r1, const float& r2)
-{
-	// cos(theta) = r1 = y
-	// cos^2(theta) + sin^2(theta) = 1 -> sin(theta) = srtf(1 - cos^2(theta))
-	float sinTheta = sqrtf(1 - r1 * r1);
-	float phi = 2 * PI * r2;
-	float x = sinTheta * cosf(phi);
-	float z = sinTheta * sinf(phi);
-	return Vec3f(x, r1, z);
-}
-
-
 class PathIntegrator
 {
 private:
@@ -147,18 +135,12 @@ public:
 			}*/
 
 			// Furnace Test
-			const float pdf = 1 / (2 * PI);
-			const float fr = 1.0f / PI;			
-			float r1 = sampler.getNext1D(); // cos(theta) = N.Light Direction
-			float r2 = sampler.getNext1D();
-			Vec3f sample = uniformSampleHemisphere(r1, r2);
-			Vec3f sampleWorld(
-				sample[0] * info.surfaceInfo.dpdu[0] + sample[1] * info.surfaceInfo.ng[0] + sample[2] * info.surfaceInfo.dpdv[0],
-				sample[0] * info.surfaceInfo.dpdu[1] + sample[1] * info.surfaceInfo.ng[1] + sample[2] * info.surfaceInfo.dpdv[1],
-				sample[0] * info.surfaceInfo.dpdu[2] + sample[1] * info.surfaceInfo.ng[2] + sample[2] * info.surfaceInfo.dpdv[2]);
-						
+			float pdf = 1.0f;
+			auto nextDir = info.hitObject->sampleDir(info.surfaceInfo, sampler, pdf);
+			float cos = std::max(0.0f, dot(nextDir, info.surfaceInfo.ng));
+			Vec3f Li(1.0f);
 			// indirectDiffuse*fr*albedo/N/pdf
-			radiance = 2 * info.hitObject->evaluate() * r1 * 1.0f;
+			radiance = info.hitObject->evaluate() * cos * Li / pdf;
 		}
 
 		return radiance;
@@ -183,30 +165,27 @@ public:
 		IntersectInfo info;
 		if (scene.intersect(ray_in, info))
 		{
-			// ideal diffuse
-			if (info.hitObject->materialType() == MaterialType::Lambert)
-			{
-				for (const auto& light : scene.getAreaLights())
-				{
-					Vec3f wi;
-					float tmax, pdf = 0.0f;
-					Vec3f L = light->sample(info, wi, pdf, tmax, sampler);
-
-					if (pdf == 0)
-						continue;
-
-					auto bias = 0.01f;
-					bool vis = !scene.occluded(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * bias, wi), tmax - bias);
-
-					radiance += vis * info.hitObject->evaluate() / PI * L * std::max(0.0f, dot(info.surfaceInfo.ng, wi)) / pdf;
-				}
-			}
-
 			// Light
-			if (info.hitObject->hasAreaLight())
-			{
-				radiance += info.hitObject->Le(info.surfaceInfo, ray_in.direction);
+			if (info.hitObject->hasAreaLight())	{
+				return info.hitObject->Le(info.surfaceInfo, ray_in.direction);
 			}
+
+			// Object
+			for (const auto& light : scene.getAreaLights())
+			{
+				Vec3f wi;
+				float tmax, pdf = 0.0f;
+				Vec3f L = light->sample(info, wi, pdf, tmax, sampler);
+
+				if (pdf == 0)
+					continue;
+
+				auto bias = 0.01f;
+				bool vis = !scene.occluded(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * bias, wi), tmax - bias);
+				float cos = std::max(0.0f, dot(info.surfaceInfo.ng, wi));
+				radiance += vis * info.hitObject->evaluate() * L * cos / pdf;
+			}
+						
 		}
 		else
 		{
@@ -265,43 +244,24 @@ public:
 				break;
 			}
 
-			// diffuse:pdf = 1 / (2 * PI);fr = 1.0f / PI;
-			if (info.hitObject->materialType() == MaterialType::Lambert)
-			{
-				// indirect light
-				float r1 = sampler.getNext1D(); // cos(theta) = N.Light Direction
-				float r2 = sampler.getNext1D();
-				Vec3f sample = uniformSampleHemisphere(r1, r2);
-				Vec3f nextDir(
-					sample[0] * info.surfaceInfo.dpdu[0] + sample[1] * info.surfaceInfo.ng[0] + sample[2] * info.surfaceInfo.dpdv[0],
-					sample[0] * info.surfaceInfo.dpdu[1] + sample[1] * info.surfaceInfo.ng[1] + sample[2] * info.surfaceInfo.dpdv[1],
-					sample[0] * info.surfaceInfo.dpdu[2] + sample[1] * info.surfaceInfo.ng[2] + sample[2] * info.surfaceInfo.dpdv[2]);
-
-				// Li*cos(theta)*fr*albedo/N/pdf   /distance^2?
-				auto bias = 0.01f;
-				//float rr = info.t * info.t;
-				//ray.throughput *= 2 * info.hitObject->evaluate() * r1 / std::max(1.0f, info.t * info.t);
-				ray.throughput *= 2 * info.hitObject->evaluate() * r1;
-				ray.origin = info.surfaceInfo.position + info.surfaceInfo.ng * bias;
-				ray.direction = nextDir;
-			}
+			// Surface Objcet
+			
+			// indirect light
+			float pdf = 1.0;
+			auto nextDir = info.hitObject->sampleDir(info.surfaceInfo, sampler, pdf);
+			float cos = std::max(.0f, dot(nextDir, info.surfaceInfo.ng));
+			// Li*cos(theta)*fr/pdf   /distance^2?
+			auto bias = 0.01f;
+			//ray.throughput *= info.hitObject->evaluate() * cos/ pdf / std::max(1.0f, info.t * info.t);
+			ray.throughput *= info.hitObject->evaluate() * cos / pdf;
+			ray.origin = info.surfaceInfo.position + info.surfaceInfo.ng * bias;
+			ray.direction = nextDir;
+			
 
 			depth++;
 		}
 
 		return radiance;
-	}
-protected:
-private:
-	Vec3f uniformSampleHemisphere(const float& r1, const float& r2) const
-	{
-		// cos(theta) = u1 = y
-		// cos^2(theta) + sin^2(theta) = 1 -> sin(theta) = srtf(1 - cos^2(theta))
-		float sinTheta = sqrtf(1 - r1 * r1);
-		float phi = 2 * PI * r2;
-		float x = sinTheta * cosf(phi);
-		float z = sinTheta * sinf(phi);
-		return Vec3f(x, r1, z);
 	}
 
 private:
@@ -365,48 +325,41 @@ public:
 				break;
 			}
 
-			// diffuse:pdf = 1 / (2 * PI);fr = 1.0f / PI;
-			if (info.hitObject->materialType() == MaterialType::Lambert)
+			// Surface Object
+			// direct light
+			Vec3f directL(0.0f);
+			for (const auto& light : scene.getAreaLights())
 			{
-				// direct light
-				Vec3f directL(0.0f);
-				for (const auto& light : scene.getAreaLights())
-				{
-					Vec3f L_light(0.0f);
-					Vec3f wi;
-					float tmax, pdf = 0.0f;
-					Vec3f L = light->sample(info, wi, pdf, tmax, sampler);	// light-->object
+				Vec3f L_light(0.0f);
+				Vec3f wi;
+				float tmax, pdf = 0.0f;
+				Vec3f L = light->sample(info, wi, pdf, tmax, sampler);	// light-->object
 
-					if (pdf == 0)
-						continue;
+				if (pdf == 0)
+					continue;
 
-					auto bias = 0.01f;
-					bool vis = !scene.occluded(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * bias, wi), tmax - bias);
-
-					L_light += vis * info.hitObject->evaluate() / PI * L * std::max(0.0f, dot(info.surfaceInfo.ng, wi)) / pdf;
-
-					directL += L_light;
-				}
-				//radiance += ray.throughput * directL / std::max(1.0f, info.t * info.t);
-				radiance += ray.throughput * directL;
-
-				// indirect light
-				float r1 = sampler.getNext1D(); // cos(theta) = N.Light Direction
-				float r2 = sampler.getNext1D();
-				Vec3f sample = uniformSampleHemisphere(r1, r2);
-				Vec3f nextDir(
-					sample[0] * info.surfaceInfo.dpdu[0] + sample[1] * info.surfaceInfo.ng[0] + sample[2] * info.surfaceInfo.dpdv[0],
-					sample[0] * info.surfaceInfo.dpdu[1] + sample[1] * info.surfaceInfo.ng[1] + sample[2] * info.surfaceInfo.dpdv[1],
-					sample[0] * info.surfaceInfo.dpdu[2] + sample[1] * info.surfaceInfo.ng[2] + sample[2] * info.surfaceInfo.dpdv[2]);
-
-				// Li*cos(theta)*fr*albedo/N/pdf   /distance^2?
 				auto bias = 0.01f;
-				ray.throughput *= 2 * info.hitObject->evaluate() * r1;
-				ray.origin = info.surfaceInfo.position + info.surfaceInfo.ng * bias;
-				ray.direction = nextDir;
+				bool vis = !scene.occluded(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * bias, wi), tmax - bias);
+				float cos = std::max(0.0f, dot(info.surfaceInfo.ng, wi));
+				L_light += vis * info.hitObject->evaluate() * L * cos / pdf;
 
-				primaryRay = false;
+				directL += L_light;
 			}
+			//radiance += ray.throughput * directL / std::max(1.0f, info.t * info.t);
+			radiance += ray.throughput * directL;
+
+			// indirect light
+			float pdf = 1.0;
+			auto nextDir = info.hitObject->sampleDir(info.surfaceInfo, sampler, pdf);
+			float cos = std::max(.0f, dot(nextDir, info.surfaceInfo.ng));
+			// Li*cos(theta)*fr/pdf   /distance^2?
+			auto bias = 0.01f;
+			ray.throughput *= info.hitObject->evaluate() * cos / pdf;
+			ray.origin = info.surfaceInfo.position + info.surfaceInfo.ng * bias;
+			ray.direction = nextDir;
+
+			primaryRay = false;
+			
 
 			depth++;
 		}
@@ -421,22 +374,11 @@ public:
 
 		return radiance;
 	}
-protected:
-private:
-	Vec3f uniformSampleHemisphere(const float& r1, const float& r2) const
-	{
-		// cos(theta) = u1 = y
-		// cos^2(theta) + sin^2(theta) = 1 -> sin(theta) = srtf(1 - cos^2(theta))
-		float sinTheta = sqrtf(1 - r1 * r1);
-		float phi = 2 * PI * r2;
-		float x = sinTheta * cosf(phi);
-		float z = sinTheta * sinf(phi);
-		return Vec3f(x, r1, z);
-	}
 
 private:
 	const uint32_t m_maxDepth;
 };
+
 
 class WhittedIntegrator : public PathIntegrator
 {
@@ -481,8 +423,7 @@ public:
 						float t_max, pdf;
 						Vec3f light_L = light->sample(info, wi, pdf, t_max);
 						bool vis = !scene.occluded(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * 0.1, wi), t_max);
-						radiance += vis * info.hitObject->evaluate() * light_L * std::max(0.f, dot(info.surfaceInfo.ns, wi)) / (PI * pdf);
-					
+						radiance += vis * info.hitObject->evaluate() * light_L * std::max(0.f, dot(info.surfaceInfo.ns, wi)) / pdf;
 					}
 					radiance *= ray.throughput;
 					total_radiance += radiance;

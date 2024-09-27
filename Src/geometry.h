@@ -670,4 +670,22 @@ Vec3f refract(const Vec3f& I, const Vec3f& N, const float& ior);
 void fresnel(const Vec3f& I, const Vec3f& N, const float& ior, float& kr);
 
 
+// transform direction from world to local
+inline Vec3f worldToLocal(const Vec3f& v, const Vec3f& lx, const Vec3f& ly,
+	const Vec3f& lz)
+{
+	return Vec3f(dot(v, lx), dot(v, ly), dot(v, lz));
+}
+
+// transform direction from local to world
+inline Vec3f localToWorld(const Vec3f& v, const Vec3f& lx, const Vec3f& ly,
+	const Vec3f& lz)
+{
+	return Vec3f(
+		v[0] * lx[0] + v[1] * ly[0] + v[2] * lz[0],
+		v[0] * lx[1] + v[1] * ly[1] + v[2] * lz[1],
+		v[0] * lx[2] + v[1] * ly[2] + v[2] * lz[2]
+	);
+}
+
 enum class MaterialType { Lambert, Metals, Glass, Luminous, Unknow };

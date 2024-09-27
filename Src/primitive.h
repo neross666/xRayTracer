@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include "ray.h"
+#include "sampler.h"
 
 class AreaLight;
 class Primitive
@@ -58,7 +59,11 @@ public:
 
 	MaterialType materialType() const;
 
+	// BRDF
 	Vec3f evaluate() const;
+
+	// 
+	Vec3f sampleDir(const SurfaceInfo& sinfo, Sampler& sampler, float& pdf) const;
 
 	Vec3f Le(const SurfaceInfo& info, const Vec3f& wi) const;
 

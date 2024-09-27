@@ -108,8 +108,8 @@ int main(int argc, char** argv)
 	UniformSampler sampler;
 	//NormalIntegrator integrator(camera, 1);
 	//WhittedIntegrator integrator(camera);
-	DirectIntegrator integrator(camera, 16);
-	//IndirectIntegrator integrator(camera, 16, 3);
+	//DirectIntegrator integrator(camera, 16);
+	IndirectIntegrator integrator(camera, 16, 3);
 	//GIIntegrator integrator(camera, 16, 3);
 	//PathTracing integrator(camera, 100, 10);
 	integrator.render(scene, sampler, image);
