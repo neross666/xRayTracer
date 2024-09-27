@@ -34,9 +34,9 @@ public:
 
 		spdlog::info("[PathIntegrator] rendering...");
 #pragma omp parallel for collapse(2) schedule(dynamic, 1)
-		for (uint32_t i = 0/*100*//*50*/; i < height; ++i) 
+		for (uint32_t i = 0; i < height; ++i) 
 		{
-			for (uint32_t j = 0/*300*//*170*/; j < width; ++j) 
+			for (uint32_t j = 0; j < width; ++j) 
 			{
 				// init sampler for each pixel
 				const std::unique_ptr<Sampler> sampler_per_pixel = sampler.clone();
@@ -46,7 +46,7 @@ public:
 				//sampler_per_pixel->discard(2);
 
 				// iteration
-				for (uint32_t k = 0/*6*/; k < n_samples; ++k) {
+				for (uint32_t k = 0; k < n_samples; ++k) {
 					// SSAA
 					const float u =
 						(j + sampler_per_pixel->getNext1D()) / width;
@@ -131,7 +131,7 @@ public:
 				if (pdf == 0.0f)
 					continue;
 
-				radiance += vis * info.hitPrimitive->evaluate() / PI * light_L * std::max(0.f, dot(info.surfaceInfo.ns, wi)) / pdf;
+				radiance += vis * info.hitPrimitive->evaluate() * light_L * std::max(0.f, dot(info.surfaceInfo.ns, wi)) / pdf;
 			}*/
 
 			// Furnace Test
@@ -363,14 +363,6 @@ public:
 
 			depth++;
 		}
-
-
-		// 		if (radiance[0] >= 1.0f)
-		// 		{
-		// 			spdlog::error("[PathIntegrator] radiance is minus: ({}, {}, {})",
-		// 				radiance[0], radiance[1], radiance[2]);
-		// 		}
-
 
 		return radiance;
 	}
