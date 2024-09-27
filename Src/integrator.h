@@ -46,9 +46,9 @@ public:
 
 		spdlog::info("[PathIntegrator] rendering...");
 #pragma omp parallel for collapse(2) schedule(dynamic, 1)
-		for (uint32_t i = 0/*50*/; i < height; ++i) 
+		for (uint32_t i = 0/*100*//*50*/; i < height; ++i) 
 		{
-			for (uint32_t j = 0/*170*/; j < width; ++j) 
+			for (uint32_t j = 0/*300*//*170*/; j < width; ++j) 
 			{
 				// init sampler for each pixel
 				const std::unique_ptr<Sampler> sampler_per_pixel = sampler.clone();
@@ -235,7 +235,6 @@ public:
 		Vec3f background(0.0f);
 
 		uint32_t depth = 0;
-		bool mainRay = true;
 		while (depth < m_maxDepth)
 		{
 			IntersectInfo info;
@@ -258,9 +257,11 @@ public:
 			// Le
 			if (info.hitObject->hasAreaLight())
 			{
-				float rr = mainRay ? 1.0f : info.t * info.t;
+				//radiance += ray.throughput *
+				//	info.hitObject->Le(info.surfaceInfo, ray.direction) / std::max(1.0f, info.t * info.t);
 				radiance += ray.throughput *
-					info.hitObject->Le(info.surfaceInfo, ray.direction) / std::max(1.0f, rr);
+					info.hitObject->Le(info.surfaceInfo, ray.direction);
+
 				break;
 			}
 
@@ -278,12 +279,11 @@ public:
 
 				// Li*cos(theta)*fr*albedo/N/pdf   /distance^2?
 				auto bias = 0.01f;
-				float rr = mainRay ? 1.0f : info.t * info.t;
-				ray.throughput *= 2 * info.hitObject->evaluate() * r1 / std::max(1.0f, rr);
+				//float rr = info.t * info.t;
+				//ray.throughput *= 2 * info.hitObject->evaluate() * r1 / std::max(1.0f, info.t * info.t);
+				ray.throughput *= 2 * info.hitObject->evaluate() * r1;
 				ray.origin = info.surfaceInfo.position + info.surfaceInfo.ng * bias;
 				ray.direction = nextDir;
-
-				mainRay = false;
 			}
 
 			depth++;
@@ -308,6 +308,12 @@ private:
 	const uint32_t m_maxDepth;
 };
 
+/*
+* think over sphere attenuation:
+* object --> eye
+* light --> object
+* object --> object
+*/
 class GIIntegrator : public PathIntegrator
 {
 public:
@@ -349,7 +355,10 @@ public:
 			if (info.hitObject->hasAreaLight())
 			{
 				if (primaryRay)
-				{					
+				{
+					//radiance += ray.throughput *
+					//	info.hitObject->Le(info.surfaceInfo, ray.direction) / std::max(1.0f, info.t * info.t);
+				
 					radiance += ray.throughput *
 						info.hitObject->Le(info.surfaceInfo, ray.direction);
 				}				
@@ -366,7 +375,7 @@ public:
 					Vec3f L_light(0.0f);
 					Vec3f wi;
 					float tmax, pdf = 0.0f;
-					Vec3f L = light->sample(info, wi, pdf, tmax, sampler);
+					Vec3f L = light->sample(info, wi, pdf, tmax, sampler);	// light-->object
 
 					if (pdf == 0)
 						continue;
@@ -378,6 +387,7 @@ public:
 
 					directL += L_light;
 				}
+				//radiance += ray.throughput * directL / std::max(1.0f, info.t * info.t);
 				radiance += ray.throughput * directL;
 
 				// indirect light
@@ -391,8 +401,7 @@ public:
 
 				// Li*cos(theta)*fr*albedo/N/pdf   /distance^2?
 				auto bias = 0.01f;
-				float rr = primaryRay ? 1.0f : info.t * info.t;
-				ray.throughput *= 2 * info.hitObject->evaluate() * r1 / std::max(1.0f, rr);
+				ray.throughput *= 2 * info.hitObject->evaluate() * r1;
 				ray.origin = info.surfaceInfo.position + info.surfaceInfo.ng * bias;
 				ray.direction = nextDir;
 
