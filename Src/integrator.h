@@ -98,7 +98,6 @@ public:
 					}
 				}
 			}
-
 			std::cout << "\rprogress: " << i << "/" << height;
 		}
 		spdlog::info("\n[PathIntegrator] done");
