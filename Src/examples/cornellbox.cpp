@@ -2,6 +2,7 @@
 #include "image.h"
 #include "integrator.h"
 #include "material.h"
+#include "renderer.h"
 
 
 std::string getCurrentDateTime()
@@ -43,18 +44,25 @@ int main(int argc, char** argv)
 		Vec3f(343.0, 548.0, 227.0),
 		Vec3f(343.0, 548.0, 332.0),
 		Vec3f(213.0, 548.0, 227.0),
-		Matrix44f(), 15.0f * Vec3f(1.0, 1.0, 1.0)));
+		Matrix44f(), 25.0f * Vec3f(1.0, 1.0, 1.0)));
+
+
+
+	// integrator
+	//const auto integrator = std::make_unique<NormalIntegrator>();
+	//const auto integrator = std::make_unique<WhittedIntegrator>(max_depth);
+	//const auto integrator = std::make_unique<DirectIntegrator>();
+	//const auto integrator = std::make_unique<IndirectIntegrator>(max_depth);
+	const auto integrator = std::make_unique<GIIntegrator>(max_depth);
+	//const auto integrator = std::make_unique<VolumePathTracing>(max_depth);
 
 
 	// render
 	UniformSampler sampler;
-	//NormalIntegrator integrator(camera.get(), n_samples);
-	//WhittedIntegrator integrator(camera.get(), n_samples, max_depth);
-	DirectIntegrator integrator(camera.get(), n_samples);
-	//IndirectIntegrator integrator(camera.get(), n_samples, max_depth);
-	//GIIntegrator integrator(camera.get(), n_samples, max_depth);
-	//VolumePathTracing integrator(camera.get(), n_samples, max_depth);
-	integrator.render(scene, sampler, image);
+	//auto renderer = std::make_unique<NormalRenderer>(n_samples, camera.get(), integrator.get());
+	auto renderer = std::make_unique<ParallelRenderer>(n_samples, camera.get(), integrator.get());
+	renderer->render(scene, sampler, image);
+
 
 	// gamma correction
 	image.gammaCorrection(1.2f);

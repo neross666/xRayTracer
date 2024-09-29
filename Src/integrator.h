@@ -1,105 +1,28 @@
 ﻿#pragma once
-#include <omp.h>
-#include <optional>
 #include <spdlog/spdlog.h>
 
-#include "camera.h"
-#include "geometry.h"
-#include "image.h"
 #include "scene.h"
 #include "light.h"
+#include "geometry.h"
 
 
-class PathIntegrator
+class Integrator
 {
 public:
-	PathIntegrator(const Camera* camera, uint32_t n_samples)
-		: camera(camera), n_samples(n_samples)
-	{
-	}
+	Integrator() = default;
+	virtual ~Integrator() = default;
 
 	// compute radiance coming from the given ray
 	virtual Vec3f integrate(const Ray& ray, const Scene& scene,
 		Sampler& sampler) const = 0;
 
-	void render(const Scene& scene, Sampler& sampler, Image& image)
-	{
-		const uint32_t width = image.getWidth();
-		const uint32_t height = image.getHeight();
-
-		spdlog::info("[PathIntegrator] rendering...");
-		for (uint32_t i = 0; i < height; ++i)
-		{
-			for (uint32_t j = 0; j < width; ++j)
-			{
-				// init sampler for each pixel
-				const std::unique_ptr<Sampler> sampler_per_pixel = sampler.clone();
-				sampler_per_pixel->setSeed(j + width * i);
-
-				// warmup sampler
-				//sampler_per_pixel->discard(2);
-
-				// iteration
-				for (uint32_t k = 0; k < n_samples; ++k) {
-					// SSAA
-					const float u =
-						(j + sampler_per_pixel->getNext1D()) / width;
-					const float v =
-						(i + sampler_per_pixel->getNext1D()) / height;
-
-					Ray ray;
-					float pdf;
-					if (camera->sampleRay(Vec2f(u, v), *sampler_per_pixel, ray, pdf)) {
-						// compute incoming radiance
-						const Vec3f radiance =
-							integrate(ray, scene, *sampler_per_pixel) / pdf;
-
-						// invalid radiance check
-						if (std::isnan(radiance[0]) || std::isnan(radiance[1]) ||
-							std::isnan(radiance[2])) {
-							spdlog::error("[PathIntegrator] radiance is NaN: ({}, {}, {})",
-								radiance[0], radiance[1], radiance[2]);
-							continue;
-						}
-						else if (std::isinf(radiance[0]) || std::isinf(radiance[1]) ||
-							std::isinf(radiance[2])) {
-							spdlog::error("[PathIntegrator] radiance is inf: ({}, {}, {})",
-								radiance[0], radiance[1], radiance[2]);
-							continue;
-						}
-						else if (radiance[0] < 0 || radiance[1] < 0 || radiance[2] < 0) {
-							spdlog::error("[PathIntegrator] radiance is minus: ({}, {}, {})",
-								radiance[0], radiance[1], radiance[2]);
-							continue;
-						}
-
-						image.addPixel(i, j, radiance);
-					}
-					else {
-						image.setPixel(i, j, Vec3f(0));
-					}
-				}
-			}
-			std::cout << "\rprogress: " << i << "/" << height;
-		}
-		spdlog::info("\n[PathIntegrator] done");
-
-		// take average
-		image /= Vec3f(n_samples);
-	}
-
-private:
-	// number of samples in each pixel
-	const uint32_t n_samples;
-	const Camera* camera;
 };
 
-class NormalIntegrator : public PathIntegrator
+
+class NormalIntegrator : public Integrator
 {
 public:
-	NormalIntegrator(const Camera* camera, uint32_t n_samples = 1)
-		: PathIntegrator(camera, n_samples) {
-	}
+	NormalIntegrator() = default;
 	virtual ~NormalIntegrator() = default;
 
 
@@ -150,12 +73,10 @@ private:
 
 };
 
-class DirectIntegrator : public PathIntegrator
+class DirectIntegrator : public Integrator
 {
 public:
-	DirectIntegrator(const Camera* camera, uint32_t n_samples)
-		: PathIntegrator(camera, n_samples) {
-	}
+	DirectIntegrator() = default;
 	virtual ~DirectIntegrator() = default;
 
 	Vec3f integrate(const Ray& ray_in, const Scene& scene,
@@ -198,11 +119,10 @@ public:
 	}
 };
 
-class IndirectIntegrator : public PathIntegrator
+class IndirectIntegrator : public Integrator
 {
 public:
-	IndirectIntegrator(const Camera* camera, uint32_t n_samples, int maxDepth)
-		: m_maxDepth(maxDepth), PathIntegrator(camera, n_samples) {
+	IndirectIntegrator(int maxDepth) : m_maxDepth(maxDepth) {
 	}
 	virtual ~IndirectIntegrator() = default;
 
@@ -275,11 +195,10 @@ private:
 * light --> object
 * object --> object
 */
-class GIIntegrator : public PathIntegrator
+class GIIntegrator : public Integrator
 {
 public:
-	GIIntegrator(const Camera* camera, uint32_t n_samples, int maxDepth)
-		: m_maxDepth(maxDepth), PathIntegrator(camera, n_samples) {
+	GIIntegrator(int maxDepth) : m_maxDepth(maxDepth) {
 	}
 	virtual ~GIIntegrator() = default;
 
@@ -372,11 +291,11 @@ private:
 };
 
 
-class WhittedIntegrator : public PathIntegrator
+class WhittedIntegrator : public Integrator
 {
 public:
-	WhittedIntegrator(const Camera* camera, uint32_t n_samples, uint32_t maxDepth = 3)
-		: PathIntegrator(camera, n_samples), m_maxDepth(maxDepth) {
+	WhittedIntegrator(uint32_t maxDepth = 3)
+		: m_maxDepth(maxDepth) {
 	}
 	virtual ~WhittedIntegrator() = default;
 
@@ -479,12 +398,11 @@ private:
 };
 
 
-class VolumePathTracing : public PathIntegrator
+class VolumePathTracing : public Integrator
 {
 public:
-	VolumePathTracing(const Camera* camera, uint32_t n_samples,
-		uint32_t maxDepth = 100)
-		: PathIntegrator(camera, n_samples), m_maxDepth(maxDepth) {
+	VolumePathTracing(uint32_t maxDepth = 100)
+		: m_maxDepth(maxDepth) {
 	}
 	virtual ~VolumePathTracing() = default;
 

@@ -10,46 +10,49 @@
 
 class Image
 {
-private:
-	uint32_t width;
-	uint32_t height;
-	std::vector<float> pixels;
-
-private:
-	uint32_t getIndex(uint32_t i, uint32_t j) const
-	{
-		return 3 * j + 3 * width * i;
-	}
-
 public:
+	struct ImageIdx
+	{
+		int i;
+		int j;
+	};
+
 	Image(uint32_t width, uint32_t height) : width(width), height(height)
 	{
-		pixels.resize(3 * width * height);
+		pixels.resize(width * height);
+
+		for (int i = 0; i < height; ++i) {
+			for (int j = 0; j < width; ++j) {
+				elems.emplace_back(ImageIdx{ i,j });
+			}
+		}
 	}
 
 	uint32_t getWidth() const { return width; }
 	uint32_t getHeight() const { return height; }
 
+
+	const std::vector<ImageIdx>& getImageIdx() const
+	{
+		return elems;
+	}
+
 	Vec3f getPixel(uint32_t i, uint32_t j) const
 	{
 		const uint32_t idx = getIndex(i, j);
-		return Vec3f(pixels[idx], pixels[idx + 1], pixels[idx + 2]);
+		return pixels[idx];
 	}
 
 	void addPixel(uint32_t i, uint32_t j, const Vec3f& rgb)
 	{
 		const uint32_t idx = getIndex(i, j);
-		pixels[idx] += rgb[0];
-		pixels[idx + 1] += rgb[1];
-		pixels[idx + 2] += rgb[2];
+		pixels[idx] += rgb;
 	}
 
 	void setPixel(uint32_t i, uint32_t j, const Vec3f& rgb)
 	{
 		const uint32_t idx = getIndex(i, j);
-		pixels[idx] = rgb[0];
-		pixels[idx + 1] = rgb[1];
-		pixels[idx + 2] = rgb[2];
+		pixels[idx] = rgb;
 	}
 
 	Image& operator*=(const Vec3f& rgb)
@@ -78,13 +81,10 @@ public:
 	{
 		for (int i = 0; i < height; ++i) {
 			for (int j = 0; j < width; ++j) {
-				Vec3f c = getPixel(i, j);
-
-				c[0] = std::pow(std::min(c[0], 1.0f), 1.0f / gamma);
-				c[1] = std::pow(std::min(c[1], 1.0f), 1.0f / gamma);
-				c[2] = std::pow(std::min(c[2], 1.0f), 1.0f / gamma);
-
-				setPixel(i, j, c);
+				auto idx = getIndex(i, j);
+				pixels[idx][0] = std::pow(std::min(pixels[idx][0], 1.0f), 1.0f / gamma);
+				pixels[idx][1] = std::pow(std::min(pixels[idx][1], 1.0f), 1.0f / gamma);
+				pixels[idx][2] = std::pow(std::min(pixels[idx][2], 1.0f), 1.0f / gamma);
 			}
 		}
 	}
@@ -134,4 +134,17 @@ public:
 		}
 		return mat;
 	}
+
+
+private:
+	uint32_t getIndex(uint32_t i, uint32_t j) const
+	{
+		return j + width * i;
+	}
+
+private:
+	uint32_t width;
+	uint32_t height;
+	std::vector<Vec3f> pixels;
+	std::vector<ImageIdx> elems;
 };

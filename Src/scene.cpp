@@ -1,6 +1,9 @@
 ﻿#include "scene.h"
 #include "material.h"
+#include "light.h"
+#include "primitive.h"
 #include <tiny_obj_loader.h>
+
 
 std::unique_ptr<Material> makeMaterial(const tinyobj::material_t& material)
 {

@@ -1,12 +1,14 @@
 ﻿#pragma once
 #include <filesystem>
 #include <spdlog/spdlog.h>
-//#include <tiny_obj_loader.h>
 #include "geometry.h"
-#include "light.h"
-#include "primitive.h"
+#include "ray.h"
 
 
+class Object;
+class Material;
+class DeltaLight;
+class AreaLight;
 class Scene
 {
 public:
