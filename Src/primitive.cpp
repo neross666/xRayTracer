@@ -1,11 +1,11 @@
-#include "primitive.h"
+ï»¿#include "primitive.h"
 #include "light.h"
 #include "material.h"
 
 
 Primitive::Primitive(
-	const std::vector<Vec3f>& vertices, 
-	const std::vector<Vec3f>& normals, 
+	const std::vector<Vec3f>& vertices,
+	const std::vector<Vec3f>& normals,
 	const std::vector<Vec2f>& texcoords)
 	: m_vertices(vertices), m_normals(normals), m_texcoords(texcoords)
 {
@@ -13,8 +13,8 @@ Primitive::Primitive(
 }
 
 Primitive::Primitive(
-	std::vector<Vec3f>&& vertices, 
-	std::vector<Vec3f>&& normals, 
+	std::vector<Vec3f>&& vertices,
+	std::vector<Vec3f>&& normals,
 	std::vector<Vec2f>&& texcoords) :
 	m_vertices(vertices), m_normals(normals), m_texcoords(texcoords)
 {
@@ -89,8 +89,8 @@ bool Mesh::occluded(const Ray& ray, float t_max) const
 {
 	for (auto& primitive : m_primitives)
 	{
-// 		if (primitive.hasAreaLight())
-// 			continue;
+		// 		if (primitive.hasAreaLight())
+		// 			continue;
 
 		const auto vertices = primitive.vertices();
 		const auto normals = primitive.normals();
@@ -114,7 +114,7 @@ bool Mesh::rayTriangleIntersect(const Vec3f& orig, const Vec3f& dir, const Vec3f
 	Vec3f pvec = cross(dir, v0v2);
 	float det = dot(v0v1, pvec);
 
-#ifdef CULLING  // µ±¿¼ÂÇÕÛÉäÊ±£¬´ò¿ªÃæÌÞ³ý£¬»áµ¼ÖÂ¹âÏßÎÞ·¨´Óµç½éÖÊÖÐ´©³ö
+#ifdef CULLING  // When refraction is taken into account, opening the face culling will result in light not passing through the glass material
 	// if the determinant is negative the triangle is backfacing
 	// if the determinant is close to 0, the ray misses the triangle
 	if (det < kEpsilon) return false;

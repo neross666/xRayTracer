@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -126,7 +126,7 @@ public:
 					std::clamp(static_cast<uint8_t>(255.0f * rgb[1]), (uint8_t)0, (uint8_t)255);
 				const uint8_t B =
 					std::clamp(static_cast<uint8_t>(255.0f * rgb[2]), (uint8_t)0, (uint8_t)255);
-				
+
 				prow[3 * j] = B;
 				prow[3 * j + 1] = G;
 				prow[3 * j + 2] = R;

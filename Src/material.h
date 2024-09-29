@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "geometry.h"
 #include "sampler.h"
 #include "ray.h"
@@ -15,9 +15,9 @@ public:
 
 	virtual Vec3f sampleDir(const SurfaceInfo& sinfo, Sampler& sampler, float& pdf) const = 0;
 
-// 	float ior() const {
-// 		return 1.3f;
-// 	}
+	// 	float ior() const {
+	// 		return 1.3f;
+	// 	}
 
 protected:
 
@@ -26,11 +26,11 @@ protected:
 class Lambert : public Material
 {
 public:
-	Lambert(Vec3f albedo) : m_albedo(albedo){
+	Lambert(Vec3f albedo) : m_albedo(albedo) {
 	};
 	~Lambert() = default;
 
-	MaterialType materialType() const override{
+	MaterialType materialType() const override {
 		return MaterialType::Lambert;
 	}
 
@@ -43,7 +43,7 @@ public:
 		float r2 = sampler.getNext1D();
 		pdf = 1 / (2 * PI);
 		Vec3f sample = uniformSampleHemisphere(r1, r2);
-		return localToWorld(sample,	sinfo.dpdu,	sinfo.ng, sinfo.dpdv);
+		return localToWorld(sample, sinfo.dpdu, sinfo.ng, sinfo.dpdv);
 	}
 
 private:

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <omp.h>
 #include <optional>
 #include <spdlog/spdlog.h>
@@ -34,14 +34,14 @@ public:
 
 		spdlog::info("[PathIntegrator] rendering...");
 #pragma omp parallel for collapse(2) schedule(dynamic, 1)
-		for (uint32_t i = 0; i < height; ++i) 
+		for (uint32_t i = 0; i < height; ++i)
 		{
-			for (uint32_t j = 0; j < width; ++j) 
+			for (uint32_t j = 0; j < width; ++j)
 			{
 				// init sampler for each pixel
 				const std::unique_ptr<Sampler> sampler_per_pixel = sampler.clone();
 				sampler_per_pixel->setSeed(j + width * i);
-				
+
 				// warmup sampler
 				//sampler_per_pixel->discard(2);
 
@@ -110,7 +110,7 @@ public:
 		Vec3f radiance(0);
 
 		IntersectInfo info;
-		if (scene.intersect(ray_in, info)) {	
+		if (scene.intersect(ray_in, info)) {
 			//return 0.5f * (info.surfaceInfo.ns + 1.0f);
 
 			/*auto tt = dot(info.surfaceInfo.ns, -ray_in.direction);
@@ -166,7 +166,7 @@ public:
 		if (scene.intersect(ray_in, info))
 		{
 			// Light
-			if (info.hitObject->hasAreaLight())	{
+			if (info.hitObject->hasAreaLight()) {
 				return info.hitObject->Le(info.surfaceInfo, ray_in.direction);
 			}
 
@@ -185,7 +185,7 @@ public:
 				float cos = std::max(0.0f, dot(info.surfaceInfo.ng, wi));
 				radiance += vis * info.hitObject->evaluate() * L * cos / pdf;
 			}
-						
+
 		}
 		else
 		{
@@ -205,8 +205,8 @@ public:
 	}
 	virtual ~IndirectIntegrator() = default;
 
-	Vec3f integrate(const Ray & ray_in, const Scene & scene,
-		Sampler & sampler) const override
+	Vec3f integrate(const Ray& ray_in, const Scene& scene,
+		Sampler& sampler) const override
 	{
 		Vec3f radiance(0.0f);
 		Ray ray = ray_in;
@@ -245,7 +245,7 @@ public:
 			}
 
 			// Surface Objcet
-			
+
 			// indirect light
 			float pdf = 1.0;
 			auto nextDir = info.hitObject->sampleDir(info.surfaceInfo, sampler, pdf);
@@ -256,7 +256,7 @@ public:
 			ray.throughput *= info.hitObject->evaluate() * cos / pdf;
 			ray.origin = info.surfaceInfo.position + info.surfaceInfo.ng * bias;
 			ray.direction = nextDir;
-			
+
 
 			depth++;
 		}
@@ -318,10 +318,10 @@ public:
 				{
 					//radiance += ray.throughput *
 					//	info.hitObject->Le(info.surfaceInfo, ray.direction) / std::max(1.0f, info.t * info.t);
-				
+
 					radiance += ray.throughput *
 						info.hitObject->Le(info.surfaceInfo, ray.direction);
-				}				
+				}
 				break;
 			}
 
@@ -359,7 +359,7 @@ public:
 			ray.direction = nextDir;
 
 			primaryRay = false;
-			
+
 
 			depth++;
 		}
@@ -400,7 +400,7 @@ public:
 				total_radiance += ray.throughput * Vec3f(0.235294, 0.67451, 0.843137);
 				continue;
 			}
-			
+
 			IntersectInfo info;
 			if (scene.intersect(ray, info))
 			{
@@ -427,7 +427,7 @@ public:
 					Ray reflect_ray;
 					reflect_ray.origin = info.surfaceInfo.position + 0.001 * info.surfaceInfo.ng;
 					reflect_ray.direction = reflect(ray.direction, info.surfaceInfo.ng);
-					reflect_ray.throughput = 0.8*ray.throughput;
+					reflect_ray.throughput = 0.8 * ray.throughput;
 					reflect_ray.depth = ray.depth + 1;
 					rays.push(reflect_ray);
 				}
@@ -444,7 +444,7 @@ public:
 						Ray refract_ray;
 						refract_ray.direction = normalize(refract(ray.direction, info.surfaceInfo.ng, 1.3/*info.hitPrimitive->ior()*/));
 						refract_ray.origin = outside ? info.surfaceInfo.position - bias : info.surfaceInfo.position + bias;
-						refract_ray.throughput = 0.9*ray.throughput * (1 - kr);
+						refract_ray.throughput = 0.9 * ray.throughput * (1 - kr);
 						refract_ray.depth = ray.depth + 1;
 
 						rays.push(refract_ray);
@@ -453,8 +453,8 @@ public:
 					Ray reflect_ray;
 					reflect_ray.direction = normalize(reflect(ray.direction, info.surfaceInfo.ng));
 					reflect_ray.origin = outside ? info.surfaceInfo.position + bias : info.surfaceInfo.position - bias;
-					reflect_ray.throughput = 0.9*ray.throughput * kr;
-					reflect_ray.depth = ray.depth + 1;	
+					reflect_ray.throughput = 0.9 * ray.throughput * kr;
+					reflect_ray.depth = ray.depth + 1;
 
 					rays.push(reflect_ray);
 				}
@@ -482,8 +482,8 @@ class PathTracing : public PathIntegrator
 {
 public:
 	PathTracing(const std::shared_ptr<Camera>& camera, uint32_t n_samples,
-	uint32_t maxDepth = 100)
-	: PathIntegrator(camera, n_samples), m_maxDepth(maxDepth){
+		uint32_t maxDepth = 100)
+		: PathIntegrator(camera, n_samples), m_maxDepth(maxDepth) {
 	}
 	virtual ~PathTracing() = default;
 
@@ -495,12 +495,12 @@ public:
 		ray.throughput = Vec3f(1, 1, 1);
 
 		uint32_t depth = 0;
-		while (depth < m_maxDepth) 
+		while (depth < m_maxDepth)
 		{
 			IntersectInfo info;
 			if (!scene.intersect(ray, info))
 				break;
-				
+
 			// russian roulette
 			if (depth > 0) {
 				const float russian_roulette_prob = std::min(
@@ -520,7 +520,7 @@ public:
 			//		info.hitPrimitive->Le(info.surfaceInfo, -ray.direction);
 			//	break;
 			//}
-			
+
 		}
 
 

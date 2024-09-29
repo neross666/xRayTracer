@@ -1,4 +1,4 @@
-#include "geometry.h"
+﻿#include "geometry.h"
 
 float length(const Vec3f& v)
 {

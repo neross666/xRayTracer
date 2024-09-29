@@ -8,12 +8,12 @@ class Primitive
 {
 public:
 	Primitive(
-		const std::vector<Vec3f>& vertices, 
-		const std::vector<Vec3f>& normals, 
+		const std::vector<Vec3f>& vertices,
+		const std::vector<Vec3f>& normals,
 		const std::vector<Vec2f>& texcoords);
 	Primitive(
-		std::vector<Vec3f>&& vertices, 
-		std::vector<Vec3f>&& normals, 
+		std::vector<Vec3f>&& vertices,
+		std::vector<Vec3f>&& normals,
 		std::vector<Vec2f>&& texcoords);
 	~Primitive() = default;
 
@@ -47,7 +47,7 @@ public:
 
 	virtual bool intersect(const Ray& ray, IntersectInfo& info) const = 0;
 
-	virtual bool occluded(const Ray& ray, float t_max) const = 0;	
+	virtual bool occluded(const Ray& ray, float t_max) const = 0;
 
 	bool hasSurface() const {
 		return m_material != nullptr;
@@ -76,7 +76,7 @@ class Sphere : public Object
 {
 public:
 	Sphere(Vec3f center, float raduis, Material* material, AreaLight* light = nullptr)
-		: m_center(center), m_raduis(raduis), m_raduis2(raduis*raduis), Object(material, light) {
+		: m_center(center), m_raduis(raduis), m_raduis2(raduis* raduis), Object(material, light) {
 
 	}
 	~Sphere() = default;
@@ -104,7 +104,7 @@ public:
 	bool occluded(const Ray& ray, float t_max) const override
 	{
 		float t = 0.0f;
-		return doIntersect(ray.origin, ray.direction, t) && t < t_max;		
+		return doIntersect(ray.origin, ray.direction, t) && t < t_max;
 	}
 
 private:
@@ -167,7 +167,7 @@ class Mesh : public Object
 public:
 	Mesh(Material* material, AreaLight* light) : Object(material, light) {}
 	Mesh(std::vector<Primitive>&& primitives, Material* material, AreaLight* light = nullptr)
-		: m_primitives(primitives), Object(material,light) {
+		: m_primitives(primitives), Object(material, light) {
 	}
 	Mesh(const std::vector<Primitive>& primitives, Material* material, AreaLight* light = nullptr)
 		: m_primitives(primitives), Object(material, light) {
@@ -191,11 +191,11 @@ protected:
 class SphereMesh : public Mesh {
 public:
 	SphereMesh(Vec3f center, float radius, int thetaResolution, int phiResolution, Material* mt, AreaLight* light)
-		: center_(center), radius_(radius), num_theta_(thetaResolution), num_phi_(phiResolution), Mesh(mt, light){
+		: center_(center), radius_(radius), num_theta_(thetaResolution), num_phi_(phiResolution), Mesh(mt, light) {
 		Triangulate(mt, light);
 	}
 
-private:	
+private:
 	void Triangulate(Material* mt, AreaLight* light);
 
 

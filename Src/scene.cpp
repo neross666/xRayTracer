@@ -1,4 +1,4 @@
-#include "scene.h"
+﻿#include "scene.h"
 #include "material.h"
 #include <tiny_obj_loader.h>
 
@@ -66,7 +66,7 @@ void Scene::loadObj(const std::filesystem::path& filepath)
 	auto& shapes = reader.GetShapes();
 	auto& materials = reader.GetMaterials();
 
-	for (const auto& material : materials) {		
+	for (const auto& material : materials) {
 		m_material.push_back(makeMaterial(material));
 	}
 

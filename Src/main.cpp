@@ -14,11 +14,11 @@
 void makeSpere()
 {
 	vtkSmartPointer<vtkSphereSource> sphereSource = vtkSmartPointer<vtkSphereSource>::New();
-	sphereSource->SetCenter(-.5, 1.5, -1.0); 
+	sphereSource->SetCenter(-.5, 1.5, -1.0);
 	sphereSource->SetRadius(.6);
 	sphereSource->SetThetaResolution(8);
 	sphereSource->SetPhiResolution(8);
-	sphereSource->Update(); 
+	sphereSource->Update();
 
 
 
@@ -84,7 +84,7 @@ int main(int argc, char** argv)
 		0, 1.0, 0, 0,
 		0, 0, -1.0, 0,
 		278, 274.4, -750.0, 1);
-	const float FOV = 60.0f;	
+	const float FOV = 60.0f;
 	const auto camera =
 		std::make_shared<PinholeCamera>(aspect_ratio, cornellbox, FOV);
 
@@ -122,7 +122,7 @@ int main(int argc, char** argv)
 	cv::imwrite(getCurrentDateTime() + "-xRayTracer.jpg", output);
 	cv::imshow("output", output);
 	cv::waitKey(0);
-		
+
 
 	return 0;
 }
