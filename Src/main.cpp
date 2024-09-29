@@ -3,46 +3,6 @@
 #include "integrator.h"
 #include "material.h"
 
-#include <vtkSmartPointer.h>
-#include <vtkSphereSource.h>
-#include <vtkOBJWriter.h>
-#include <vtkPolyData.h>
-#include <vtkCubeSource.h>
-#include <vtkTransform.h>
-#include <vtkTransformFilter.h>
-
-void makeSpere()
-{
-	vtkSmartPointer<vtkSphereSource> sphereSource = vtkSmartPointer<vtkSphereSource>::New();
-	sphereSource->SetCenter(-.5, 1.5, -1.0);
-	sphereSource->SetRadius(.6);
-	sphereSource->SetThetaResolution(8);
-	sphereSource->SetPhiResolution(8);
-	sphereSource->Update();
-
-
-
-	vtkSmartPointer<vtkOBJWriter> objWriter = vtkSmartPointer<vtkOBJWriter>::New();
-	std::string filename = DATA_DIR;
-	objWriter->SetFileName((filename + "sphere.obj").c_str());
-	objWriter->SetInputData(sphereSource->GetOutput());
-	objWriter->Write();
-}
-
-void makeCube()
-{
-	// 创建立方体源
-	vtkSmartPointer<vtkCubeSource> cubeSource = vtkSmartPointer<vtkCubeSource>::New();
-	cubeSource->SetCenter(-2.0, 2.0, -2.0);
-
-	// 写入OBJ文件
-	vtkSmartPointer<vtkOBJWriter> writer = vtkSmartPointer<vtkOBJWriter>::New();
-	std::string filename = DATA_DIR;
-	writer->SetFileName((filename + "cube.obj").c_str());
-	writer->SetInputConnection(cubeSource->GetOutputPort());
-	writer->Write();
-}
-
 
 std::string getCurrentDateTime()
 {
@@ -57,9 +17,6 @@ std::string getCurrentDateTime()
 
 int main(int argc, char** argv)
 {
-	//makeSpere();
-	//makeCube();
-
 	const uint32_t width = 780;
 	const uint32_t height = 585;
 	const uint32_t n_samples = 1;
@@ -86,9 +43,9 @@ int main(int argc, char** argv)
 		278, 274.4, -750.0, 1);
 	const float FOV = 60.0f;
 	const auto camera =
-		std::make_shared<PinholeCamera>(aspect_ratio, cornellbox, FOV);
+		std::make_unique<PinholeCamera>(aspect_ratio, cornellbox, FOV);
 
-	const auto material = std::make_shared<Lambert>(Vec3f(0.18));
+	const auto material = std::make_unique<Lambert>(Vec3f(0.18));
 
 	// build scene
 	Scene scene;
@@ -106,12 +63,12 @@ int main(int argc, char** argv)
 
 	// render
 	UniformSampler sampler;
-	//NormalIntegrator integrator(camera, 1);
-	//WhittedIntegrator integrator(camera);
-	//DirectIntegrator integrator(camera, 16);
-	//IndirectIntegrator integrator(camera, 16, 3);
-	GIIntegrator integrator(camera, 16, 3);
-	//PathTracing integrator(camera, 100, 10);
+	//NormalIntegrator integrator(camera.get(), 1);
+	//WhittedIntegrator integrator(camera.get());
+	//DirectIntegrator integrator(camera.get(), 16);
+	//IndirectIntegrator integrator(camera.get(), 16, 3);
+	GIIntegrator integrator(camera.get(), 16, 3);
+	//PathTracing integrator(camera.get(), 100, 10);
 	integrator.render(scene, sampler, image);
 
 	// gamma correction

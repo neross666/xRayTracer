@@ -156,22 +156,21 @@ void Scene::addObj(std::string name, std::shared_ptr<Object> obj)
 
 void Scene::makeDeltaLight()
 {
-
 	/*Matrix44f l2w(
 		1.0, 0.0, 0.0, 0.0,
 		0.0, 0.0, 1.0, 0.0,
 		0.0, 1.0, 0.0, 0.0,
 		0.0, 0.0, 0.0, 1.0);*/
 	Matrix44f l2w(0.95292, 0.289503, 0.0901785, 0, -0.0960954, 0.5704, -0.815727, 0, -0.287593, 0.768656, 0.571365, 0, 0, 0, 0, 1);
-	m_deltaLights.push_back(std::make_shared<DistantLight>(l2w, Vec3f(1.0, 1.0, 1.0), 1.0f));
+	m_deltaLights.push_back(std::make_unique<DistantLight>(l2w, Vec3f(1.0, 1.0, 1.0), 1.0f));
 
 	Matrix44f l2w2(
 		1.0, 0.0, 0.0, 0.0,
 		0.0, 1.0, 0.0, 0.0,
 		0.0, 0.0, 1.0, 0.0,
 		5.0, 5.0, -1.0, 1.0);
-	//m_deltaLights.push_back(std::make_shared<PointLight>(mat, Vec3f(0.63, 0.33, 0.03), 50.0));
-	//m_deltaLights.push_back(std::make_shared<PointLight>(l2w2, Vec3f(0.0, 1.0, 0.0), 500.0));
+	//m_deltaLights.push_back(std::make_unique<PointLight>(l2w2, Vec3f(0.63, 0.33, 0.03), 50.0f));
+	//m_deltaLights.push_back(std::make_unique<PointLight>(l2w2, Vec3f(0.0, 1.0, 0.0), 500.0f));
 
 
 	Matrix44f l2w3(
@@ -179,36 +178,36 @@ void Scene::makeDeltaLight()
 		0.0, 1.0, 0.0, 0.0,
 		0.0, 0.0, 1.0, 0.0,
 		0.0, 0.0, 2.0, 1.0);
-	//m_deltaLights.push_back(std::make_shared<PointLight>(l2w3, Vec3f(0.63, 0.33, 0.03), 2.0));
-	//m_deltaLights.push_back(std::make_shared<PointLight>(l2w3, Vec3f(1.0, 1.0, 1.0), 2.0f));
+	//m_deltaLights.push_back(std::make_unique<PointLight>(l2w3, Vec3f(0.63, 0.33, 0.03), 2.0f));
+	//m_deltaLights.push_back(std::make_unique<PointLight>(l2w3, Vec3f(1.0, 1.0, 1.0), 2.0f));
 }
 
 void Scene::makeAreaLight()
 {
-	auto light = std::make_shared<QuadLight>(
+	auto light = std::make_unique<QuadLight>(
 		Vec3f(343.0, 548.0, 227.0),
 		Vec3f(343.0, 548.0, 332.0),
 		Vec3f(213.0, 548.0, 227.0),
 		Matrix44f(), 15.0f * Vec3f(1.0, 1.0, 1.0));
 
-	m_areaLights.push_back(light);
 	addObj("QuadLight", light->getObject());
+	m_areaLights.push_back(std::move(light));
 
 
 
 	Matrix44<float> xfm_sphere(.2, 0, 0, 0, 0, .2, 0, 0, 0, 0, .2, 0, 0, 0, -4, 1);
 	std::shared_ptr<SphereLight> sphere_light = std::make_shared<SphereLight>(Vec3f(0.0f), 0.2f, xfm_sphere, Vec3f(10.0f));
 
-	//m_areaLights.push_back(sphere_light);
 	//addObj("SphereLight", sphere_light->getObject());
+	//m_areaLights.push_back(sphere_light);
 }
 
-const std::vector<std::shared_ptr<DeltaLight>>& Scene::getDeltaLights() const
+const std::vector<std::unique_ptr<DeltaLight>>& Scene::getDeltaLights() const
 {
 	return m_deltaLights;
 }
 
-const std::vector<std::shared_ptr<AreaLight>>& Scene::getAreaLights() const
+const std::vector<std::unique_ptr<AreaLight>>& Scene::getAreaLights() const
 {
 	return m_areaLights;
 }

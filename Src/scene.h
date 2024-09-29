@@ -25,9 +25,9 @@ public:
 
 	void makeAreaLight();
 
-	const std::vector<std::shared_ptr<DeltaLight>>& getDeltaLights() const;
+	const std::vector<std::unique_ptr<DeltaLight>>& getDeltaLights() const;
 
-	const std::vector<std::shared_ptr<AreaLight>>& getAreaLights() const;
+	const std::vector<std::unique_ptr<AreaLight>>& getAreaLights() const;
 
 	bool intersect(const Ray& ray, IntersectInfo& info) const;
 
@@ -36,8 +36,8 @@ public:
 
 protected:
 private:
-	std::vector<std::shared_ptr<DeltaLight>> m_deltaLights;
-	std::vector<std::shared_ptr<AreaLight>> m_areaLights;
+	std::vector<std::unique_ptr<DeltaLight>> m_deltaLights;
+	std::vector<std::unique_ptr<AreaLight>> m_areaLights;
 	std::unordered_map<std::string, std::shared_ptr<Object>> m_objects;
 	std::vector<std::unique_ptr<Material>> m_material;
 };

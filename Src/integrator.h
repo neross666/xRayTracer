@@ -15,10 +15,10 @@ class PathIntegrator
 private:
 	// number of samples in each pixel
 	const uint32_t n_samples;
-	const std::shared_ptr<Camera> camera;
+	const Camera* camera;
 
 public:
-	PathIntegrator(const std::shared_ptr<Camera>& camera, uint32_t n_samples)
+	PathIntegrator(const Camera* camera, uint32_t n_samples)
 		: camera(camera), n_samples(n_samples)
 	{
 	}
@@ -33,7 +33,6 @@ public:
 		const uint32_t height = image.getHeight();
 
 		spdlog::info("[PathIntegrator] rendering...");
-#pragma omp parallel for collapse(2) schedule(dynamic, 1)
 		for (uint32_t i = 0; i < height; ++i)
 		{
 			for (uint32_t j = 0; j < width; ++j)
@@ -98,7 +97,7 @@ public:
 class NormalIntegrator : public PathIntegrator
 {
 public:
-	NormalIntegrator(const std::shared_ptr<Camera>& camera, uint32_t n_samples = 1)
+	NormalIntegrator(const Camera* camera, uint32_t n_samples = 1)
 		: PathIntegrator(camera, n_samples) {
 	}
 	virtual ~NormalIntegrator() = default;
@@ -153,7 +152,7 @@ private:
 class DirectIntegrator : public PathIntegrator
 {
 public:
-	DirectIntegrator(const std::shared_ptr<Camera>& camera, uint32_t n_samples)
+	DirectIntegrator(const Camera* camera, uint32_t n_samples)
 		: PathIntegrator(camera, n_samples) {
 	}
 	virtual ~DirectIntegrator() = default;
@@ -200,7 +199,7 @@ public:
 class IndirectIntegrator : public PathIntegrator
 {
 public:
-	IndirectIntegrator(const std::shared_ptr<Camera>& camera, uint32_t n_samples, int maxDepth)
+	IndirectIntegrator(const Camera* camera, uint32_t n_samples, int maxDepth)
 		: m_maxDepth(maxDepth), PathIntegrator(camera, n_samples) {
 	}
 	virtual ~IndirectIntegrator() = default;
@@ -277,7 +276,7 @@ private:
 class GIIntegrator : public PathIntegrator
 {
 public:
-	GIIntegrator(const std::shared_ptr<Camera>& camera, uint32_t n_samples, int maxDepth)
+	GIIntegrator(const Camera* camera, uint32_t n_samples, int maxDepth)
 		: m_maxDepth(maxDepth), PathIntegrator(camera, n_samples) {
 	}
 	virtual ~GIIntegrator() = default;
@@ -375,7 +374,7 @@ private:
 class WhittedIntegrator : public PathIntegrator
 {
 public:
-	WhittedIntegrator(const std::shared_ptr<Camera>& camera, uint32_t maxDepth = 3)
+	WhittedIntegrator(const Camera* camera, uint32_t maxDepth = 3)
 		: PathIntegrator(camera, 1), m_maxDepth(maxDepth) {
 	}
 	virtual ~WhittedIntegrator() = default;
@@ -481,7 +480,7 @@ private:
 class PathTracing : public PathIntegrator
 {
 public:
-	PathTracing(const std::shared_ptr<Camera>& camera, uint32_t n_samples,
+	PathTracing(const Camera* camera, uint32_t n_samples,
 		uint32_t maxDepth = 100)
 		: PathIntegrator(camera, n_samples), m_maxDepth(maxDepth) {
 	}
