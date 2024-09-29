@@ -26,23 +26,23 @@ public:
 	~NormalRenderer() = default;
 
 	// render scene
-	virtual void render(const Scene& scene, Sampler& sampler, Image& image) const override final;
+	virtual void render(const Scene& scene, Sampler& sampler, Image& image) const override;
 
-private:
+protected:
+	void doRender(const Scene& scene, Sampler& sampler, Image& image, int i, int j) const;
+
+protected:
 	// number of samples in each pixel
 	const uint32_t n_samples;
+
 };
 
-class ParallelRenderer : public Renderer
+class ParallelRenderer : public NormalRenderer
 {
 public:
-	ParallelRenderer(uint32_t spp, Camera* cam, Integrator* inte) : n_samples(spp), Renderer(cam, inte) {}
+	ParallelRenderer(uint32_t spp, Camera* cam, Integrator* inte) : NormalRenderer(spp, cam, inte) {}
 	~ParallelRenderer() = default;
 
 	// render scene
 	void render(const Scene& scene, Sampler& sampler, Image& image) const override;
-
-private:
-	// number of samples in each pixel
-	const uint32_t n_samples;
 };

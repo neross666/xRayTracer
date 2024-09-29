@@ -49,18 +49,18 @@ int main(int argc, char** argv)
 
 
 	// integrator
-	//const auto integrator = std::make_unique<NormalIntegrator>();
+	const auto integrator = std::make_unique<NormalIntegrator>();
 	//const auto integrator = std::make_unique<WhittedIntegrator>(max_depth);
 	//const auto integrator = std::make_unique<DirectIntegrator>();
 	//const auto integrator = std::make_unique<IndirectIntegrator>(max_depth);
-	const auto integrator = std::make_unique<GIIntegrator>(max_depth);
+	//const auto integrator = std::make_unique<GIIntegrator>(max_depth);
 	//const auto integrator = std::make_unique<VolumePathTracing>(max_depth);
 
 
 	// render
 	UniformSampler sampler;
-	//auto renderer = std::make_unique<NormalRenderer>(n_samples, camera.get(), integrator.get());
-	auto renderer = std::make_unique<ParallelRenderer>(n_samples, camera.get(), integrator.get());
+	auto renderer = std::make_unique<NormalRenderer>(n_samples, camera.get(), integrator.get());
+	//auto renderer = std::make_unique<ParallelRenderer>(n_samples, camera.get(), integrator.get());
 	renderer->render(scene, sampler, image);
 
 
