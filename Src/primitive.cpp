@@ -28,12 +28,20 @@ MaterialType Object::materialType() const
 	return m_material->materialType();
 }
 
-Vec3f Object::evaluate() const
+Vec3f Object::evaluateBxDF(const Vec3f& wo, const Vec3f& wi, const SurfaceInfo& sinfo) const
 {
 	if (m_material == nullptr)
 		return Vec3f(0.0f);
-	return m_material->evaluate();
+	return m_material->evaluateBxDF(wo, wi, sinfo);
 }
+
+Vec3f Object::sampleBxDF(const Vec3f& wo, const SurfaceInfo& sinfo, Sampler& sampler, Vec3f& wi, float& pdf) const
+{
+	if (m_material == nullptr)
+		return Vec3f(0.0f);
+	return m_material->sampleBxDF(wo, sinfo, sampler, wi, pdf);
+}
+
 
 Vec3f Object::sampleDir(const SurfaceInfo& sinfo, Sampler& sampler, float& pdf) const
 {
@@ -137,7 +145,7 @@ bool Mesh::rayTriangleIntersect(const Vec3f& orig, const Vec3f& dir, const Vec3f
 	return t > kEpsilon;
 }
 
-void SphereMesh::Triangulate(Material* mt, AreaLight* light)
+void SphereMesh::Triangulate()
 {
 	std::vector<Vec3f> vertices;
 	std::vector<Vec3f> normals;

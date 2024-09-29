@@ -48,12 +48,12 @@ int main(int argc, char** argv)
 
 	// render
 	UniformSampler sampler;
-	NormalIntegrator integrator(camera.get(), n_samples);
+	//NormalIntegrator integrator(camera.get(), n_samples);
 	//WhittedIntegrator integrator(camera.get(), n_samples, max_depth);
-	//DirectIntegrator integrator(camera.get(), n_samples);
+	DirectIntegrator integrator(camera.get(), n_samples);
 	//IndirectIntegrator integrator(camera.get(), n_samples, max_depth);
 	//GIIntegrator integrator(camera.get(), n_samples, max_depth);
-	//PathTracing integrator(camera.get(), n_samples, max_depth);
+	//VolumePathTracing integrator(camera.get(), n_samples, max_depth);
 	integrator.render(scene, sampler, image);
 
 	// gamma correction

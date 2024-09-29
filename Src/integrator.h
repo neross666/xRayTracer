@@ -12,11 +12,6 @@
 
 class PathIntegrator
 {
-private:
-	// number of samples in each pixel
-	const uint32_t n_samples;
-	const Camera* camera;
-
 public:
 	PathIntegrator(const Camera* camera, uint32_t n_samples)
 		: camera(camera), n_samples(n_samples)
@@ -92,6 +87,11 @@ public:
 		// take average
 		image /= Vec3f(n_samples);
 	}
+
+private:
+	// number of samples in each pixel
+	const uint32_t n_samples;
+	const Camera* camera;
 };
 
 class NormalIntegrator : public PathIntegrator
@@ -135,11 +135,12 @@ public:
 
 			// Furnace Test
 			float pdf = 1.0f;
-			auto nextDir = info.hitObject->sampleDir(info.surfaceInfo, sampler, pdf);
+			Vec3f nextDir(0.0f);
+			auto fr = info.hitObject->sampleBxDF(ray_in.direction, info.surfaceInfo, sampler, nextDir, pdf);
 			float cos = std::max(0.0f, dot(nextDir, info.surfaceInfo.ng));
 			Vec3f Li(1.0f);
 			// indirectDiffuse*fr*albedo/N/pdf
-			radiance = info.hitObject->evaluate() * cos * Li / pdf;
+			radiance = fr * cos * Li / pdf;
 		}
 
 		return radiance;
@@ -182,7 +183,8 @@ public:
 				auto bias = 0.01f;
 				bool vis = !scene.occluded(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * bias, wi), tmax - bias);
 				float cos = std::max(0.0f, dot(info.surfaceInfo.ng, wi));
-				radiance += vis * info.hitObject->evaluate() * L * cos / pdf;
+				Vec3f fr = info.hitObject->evaluateBxDF(ray_in.direction, wi, info.surfaceInfo);
+				radiance += vis * fr * L * cos / pdf;
 			}
 
 		}
@@ -244,15 +246,15 @@ public:
 			}
 
 			// Surface Objcet
-
 			// indirect light
 			float pdf = 1.0;
-			auto nextDir = info.hitObject->sampleDir(info.surfaceInfo, sampler, pdf);
+			Vec3f nextDir(0.0f);
+			auto fr = info.hitObject->sampleBxDF(ray.direction, info.surfaceInfo, sampler, nextDir, pdf);
 			float cos = std::max(.0f, dot(nextDir, info.surfaceInfo.ng));
 			// Li*cos(theta)*fr/pdf   /distance^2?
 			auto bias = 0.01f;
-			//ray.throughput *= info.hitObject->evaluate() * cos/ pdf / std::max(1.0f, info.t * info.t);
-			ray.throughput *= info.hitObject->evaluate() * cos / pdf;
+			//ray.throughput *= fr * cos/ pdf / std::max(1.0f, info.t * info.t);
+			ray.throughput *= fr * cos / pdf;
 			ray.origin = info.surfaceInfo.position + info.surfaceInfo.ng * bias;
 			ray.direction = nextDir;
 
@@ -290,7 +292,6 @@ public:
 		Vec3f background(0.0f);
 
 		uint32_t depth = 0;
-		bool primaryRay = true;
 		while (depth < m_maxDepth)
 		{
 			IntersectInfo info;
@@ -313,7 +314,7 @@ public:
 			// Le
 			if (info.hitObject->hasAreaLight())
 			{
-				if (primaryRay)
+				if (depth == 0)
 				{
 					//radiance += ray.throughput *
 					//	info.hitObject->Le(info.surfaceInfo, ray.direction) / std::max(1.0f, info.t * info.t);
@@ -340,7 +341,8 @@ public:
 				auto bias = 0.01f;
 				bool vis = !scene.occluded(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * bias, wi), tmax - bias);
 				float cos = std::max(0.0f, dot(info.surfaceInfo.ng, wi));
-				L_light += vis * info.hitObject->evaluate() * L * cos / pdf;
+				Vec3f fr = info.hitObject->evaluateBxDF(ray.direction, wi, info.surfaceInfo);
+				L_light += vis * fr * L * cos / pdf;
 
 				directL += L_light;
 			}
@@ -349,15 +351,14 @@ public:
 
 			// indirect light
 			float pdf = 1.0;
-			auto nextDir = info.hitObject->sampleDir(info.surfaceInfo, sampler, pdf);
+			Vec3f nextDir(0.0f);
+			auto fr = info.hitObject->sampleBxDF(ray.direction, info.surfaceInfo, sampler, nextDir, pdf);
 			float cos = std::max(.0f, dot(nextDir, info.surfaceInfo.ng));
 			// Li*cos(theta)*fr/pdf   /distance^2?
 			auto bias = 0.01f;
-			ray.throughput *= info.hitObject->evaluate() * cos / pdf;
+			ray.throughput *= fr * cos / pdf;
 			ray.origin = info.surfaceInfo.position + info.surfaceInfo.ng * bias;
 			ray.direction = nextDir;
-
-			primaryRay = false;
 
 
 			depth++;
@@ -414,7 +415,8 @@ public:
 						float t_max, pdf;
 						Vec3f light_L = light->sample(info, wi, pdf, t_max);
 						bool vis = !scene.occluded(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * 0.1, wi), t_max);
-						radiance += vis * info.hitObject->evaluate() * light_L * std::max(0.f, dot(info.surfaceInfo.ns, wi)) / pdf;
+						auto fr = info.hitObject->evaluateBxDF(ray.direction, wi, info.surfaceInfo);
+						radiance += vis * fr * light_L * std::max(0.f, dot(info.surfaceInfo.ns, wi)) / pdf;
 					}
 					radiance *= ray.throughput;
 					total_radiance += radiance;
@@ -477,14 +479,14 @@ private:
 };
 
 
-class PathTracing : public PathIntegrator
+class VolumePathTracing : public PathIntegrator
 {
 public:
-	PathTracing(const Camera* camera, uint32_t n_samples,
+	VolumePathTracing(const Camera* camera, uint32_t n_samples,
 		uint32_t maxDepth = 100)
 		: PathIntegrator(camera, n_samples), m_maxDepth(maxDepth) {
 	}
-	virtual ~PathTracing() = default;
+	virtual ~VolumePathTracing() = default;
 
 	Vec3f integrate(const Ray& ray_in, const Scene& scene,
 		Sampler& sampler) const override
@@ -510,16 +512,31 @@ public:
 				ray.throughput /= russian_roulette_prob;
 			}
 
-			// ignore medium for now
-
-
 			// Le
-			//if (info.hitPrimitive->hasAreaLight()) {
-			//	radiance += ray.throughput *
-			//		info.hitPrimitive->Le(info.surfaceInfo, -ray.direction);
-			//	break;
-			//}
+			if (info.hitObject->hasAreaLight()) {
+				radiance += ray.throughput *
+					info.hitObject->Le(info.surfaceInfo, -ray.direction);
+				break;
+			}
 
+			// sample medium
+			//bool is_scattered = false;
+			//if (ray.hasMedium()) {
+			//	const Medium* medium = ray.getCurrentMedium();
+
+			//	Vec3f pos;
+			//	Vec3f dir;
+			//	Vec3f throughput_medium;
+			//	is_scattered = medium->sampleMedium(ray, info.t, sampler, pos, dir,
+			//		throughput_medium);
+
+			//	// advance ray
+			//	ray.origin = pos;
+			//	ray.direction = dir;
+
+			//	// update throughput
+			//	ray.throughput *= throughput_medium;
+			//}
 		}
 
 

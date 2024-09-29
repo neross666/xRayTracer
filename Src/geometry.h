@@ -236,6 +236,18 @@ inline Vec3<T> operator/(float k, const Vec3<T>& v2)
 }
 
 template <typename T>
+inline Vec3<T> vmin(const Vec3<T>& v1, const Vec3<T>& v2)
+{
+	return Vec3<T>(std::min(v1[0], v2[0]), std::min(v1[1], v2[1]), std::min(v1[2], v2[2]));
+}
+
+template <typename T>
+inline Vec3<T> vmax(const Vec3<T>& v1, const Vec3<T>& v2)
+{
+	return Vec3<T>(std::max(v1[0], v2[0]), std::max(v1[1], v2[1]), std::max(v1[2], v2[2]));
+}
+
+template <typename T>
 inline T dot(const Vec3<T>& v1, const Vec3<T>& v2)
 {
 	return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];

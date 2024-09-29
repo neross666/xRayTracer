@@ -11,7 +11,9 @@ public:
 
 	virtual MaterialType materialType() const = 0;
 
-	virtual Vec3f evaluate() const = 0;
+	virtual Vec3f evaluateBxDF(const Vec3f& wo, const Vec3f& wi, const SurfaceInfo& sinfo) const = 0;
+
+	virtual Vec3f sampleBxDF(const Vec3f& wo, const SurfaceInfo& sinfo, Sampler& sampler, Vec3f& wi, float& pdf) const = 0;
 
 	virtual Vec3f sampleDir(const SurfaceInfo& sinfo, Sampler& sampler, float& pdf) const = 0;
 
@@ -34,8 +36,20 @@ public:
 		return MaterialType::Lambert;
 	}
 
-	Vec3f evaluate() const override {
+	Vec3f evaluateBxDF(const Vec3f& wo, const Vec3f& wi, const SurfaceInfo& sinfo) const override {
+		// world to local transform
+// 		const Vec3f wo_l =
+// 			worldToLocal(wo, sinfo.dpdu, sinfo.ng, sinfo.dpdv);
+// 		const Vec3f wi_l =
+// 			worldToLocal(wi, sinfo.dpdu, sinfo.ng, sinfo.dpdv);
+// 		const Vec3f ng_l = Vec3f(0, 1, 0);
+
 		return m_albedo / PI;
+	}
+
+	Vec3f sampleBxDF(const Vec3f& wo, const SurfaceInfo& sinfo, Sampler& sampler, Vec3f& wi, float& pdf) const override {
+		wi = sampleDir(sinfo, sampler, pdf);
+		return evaluateBxDF(wo, wi, sinfo);
 	}
 
 	Vec3f sampleDir(const SurfaceInfo& sinfo, Sampler& sampler, float& pdf) const override {

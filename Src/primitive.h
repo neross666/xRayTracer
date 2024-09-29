@@ -3,7 +3,6 @@
 #include "ray.h"
 #include "sampler.h"
 
-class AreaLight;
 class Primitive
 {
 public:
@@ -59,8 +58,11 @@ public:
 
 	MaterialType materialType() const;
 
-	// BRDF
-	Vec3f evaluate() const;
+
+	Vec3f evaluateBxDF(const Vec3f& wo, const Vec3f& wi, const SurfaceInfo& sinfo) const;
+
+	// sample dir and evaluate BRDF
+	Vec3f sampleBxDF(const Vec3f& wo, const SurfaceInfo& sinfo, Sampler& sampler, Vec3f& wi, float& pdf) const;
 
 	// 
 	Vec3f sampleDir(const SurfaceInfo& sinfo, Sampler& sampler, float& pdf) const;
@@ -161,7 +163,6 @@ private:
 	float m_raduis2;
 };
 
-
 class Mesh : public Object
 {
 public:
@@ -192,11 +193,11 @@ class SphereMesh : public Mesh {
 public:
 	SphereMesh(Vec3f center, float radius, int thetaResolution, int phiResolution, Material* mt, AreaLight* light)
 		: center_(center), radius_(radius), num_theta_(thetaResolution), num_phi_(phiResolution), Mesh(mt, light) {
-		Triangulate(mt, light);
+		Triangulate();
 	}
 
 private:
-	void Triangulate(Material* mt, AreaLight* light);
+	void Triangulate();
 
 
 private:
@@ -204,4 +205,50 @@ private:
 	float radius_ = 1.0f;
 	int num_theta_ = 10;	// polar:0~π
 	int num_phi_ = 10;		// az:0~2π
+};
+
+class BoxMesh : public Object
+{
+public:
+	BoxMesh() = default;
+	~BoxMesh() = default;
+
+public:
+	BoxMesh(Vec3f _min, Vec3f _max)
+		: pMin(_min), pMax(_max), Object(nullptr, nullptr) {
+		//Triangulate();
+	}
+
+	// Slab method for ray-box intersection
+	bool intersect(const Ray& ray, IntersectInfo& info) const override {
+		Vec3f direction_inv = 1.0 / ray.direction;
+		Vec3f t_top = direction_inv * (pMax - ray.origin);
+		Vec3f t_bottom = direction_inv * (pMin - ray.origin);
+		Vec3f t_min = vmin(t_top, t_bottom);
+		Vec3f t_max = vmax(t_top, t_bottom);
+
+		float t_0 = std::max(std::max(t_min[0], t_min[1]), t_min[2]);
+		float t_1 = std::min(std::min(t_max[0], t_max[1]), t_max[2]);
+
+		if (t_0 > t_1 || t_1 < 0.0f) {
+			return false;
+		}
+
+		t_0 = std::max(t_0, 0.0f); // Ensure t_0 is not negative
+		return true;
+	}
+
+	bool occluded(const Ray& ray, float t_max) const override {
+		return true;
+	}
+
+private:
+	void Triangulate();
+
+private:
+	Vec3f pMin = Vec3f(0.0f);
+	Vec3f pMax = Vec3f(0.0f);
+
+private:
+
 };
