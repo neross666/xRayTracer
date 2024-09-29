@@ -26,7 +26,6 @@ public:
 	}
 
 	// sample ray emitting from the given sensor coordinate
-	// NOTE: uv: [-aspectRatio, -1] x [aspectRatio, 1], sensor coordinate
 	virtual bool sampleRay(const Vec2f& uv, Sampler& sampler, Ray& ray,
 		float& pdf) const = 0;
 };

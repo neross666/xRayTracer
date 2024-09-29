@@ -10,20 +10,11 @@ TriangleLight::TriangleLight(const Vec3f& v0, const Vec3f& v1, const Vec3f& v2, 
 , e2_(v2_ - v0_)
 , Ng_(cross(e1_, e2_))
 {
-	std::vector<Vec3f> vertices{ v0_, v1_, v2_ };
-	auto n = normalize(Ng_);
-	std::vector<Vec3f> normals{ n,n,n };
-	std::vector<Vec2f> texcoords{ Vec2f(0, 0), Vec2f(1, 0),Vec2f(0, 1) };
-	std::vector<Primitive> primitives{ Primitive(vertices, normals, texcoords) };
-
-	lightObject = std::make_shared<Mesh>(primitives, nullptr, this);
 }
 
 TriangleLight::TriangleLight(const Primitive& primitive, const Vec3f& Le) : AreaLight(Matrix44f(), Le)
 {
 	std::vector<Primitive> primitives{ primitive };
-
-	lightObject = std::make_shared<Mesh>(primitives, nullptr, this);
 }
 
 Vec3f TriangleLight::sample(const IntersectInfo& info, Vec3<float>& wi, float& pdf, float& tmax, Sampler& sample) const
@@ -35,6 +26,17 @@ Vec3f TriangleLight::sample(const IntersectInfo& info, Vec3<float>& wi, float& p
 	wi = d / tmax;
 	pdf = (2.f * tmax * tmax * tmax) / std::abs(d_dot_Ng);
 	return Le_;
+}
+
+std::unique_ptr<Object> TriangleLight::makeObject()
+{
+	std::vector<Vec3f> vertices{ v0_, v1_, v2_ };
+	auto n = normalize(Ng_);
+	std::vector<Vec3f> normals{ n,n,n };
+	std::vector<Vec2f> texcoords{ Vec2f(0, 0), Vec2f(1, 0),Vec2f(0, 1) };
+	std::vector<Primitive> primitives{ Primitive(vertices, normals, texcoords) };
+
+	return std::make_unique< Mesh >(primitives, nullptr, this);
 }
 
 Vec3f TriangleLight::uniformSampleTriangle(const float& u, const float& v, const Vec3f& A, const Vec3f& B, const Vec3f& C) const
@@ -51,16 +53,6 @@ QuadLight::QuadLight(const Vec3f& v0, const Vec3f& v1, const Vec3f& v2, const Ma
 , e2_(v2_ - v0_)
 , Ng_(cross(e1_, e2_))
 {
-	Vec3f v3_ = v0_ + e1_ + e2_;
-	auto n = normalize(Ng_);
-	std::vector<Vec3f> normals{ n,n,n };
-	std::vector<Vec2f> texcoords{ Vec2f(0, 0), Vec2f(1, 0),Vec2f(0, 1) };
-	std::vector<Primitive> primitives{
-		Primitive({ v0_, v1_, v2_ }, normals, texcoords),
-		Primitive({ v1_, v3_, v2_ }, normals, texcoords)
-	};
-
-	lightObject = std::make_shared<Mesh>(primitives, nullptr, this);
 }
 
 Vec3f QuadLight::sample(const IntersectInfo& info, Vec3<float>& wi, float& pdf, float& tmax, Sampler& sample) const
@@ -74,11 +66,30 @@ Vec3f QuadLight::sample(const IntersectInfo& info, Vec3<float>& wi, float& pdf, 
 	return Le_;
 }
 
+std::unique_ptr<Object> QuadLight::makeObject()
+{
+	Vec3f v3_ = v0_ + e1_ + e2_;
+	auto n = normalize(Ng_);
+	std::vector<Vec3f> normals{ n,n,n };
+	std::vector<Vec2f> texcoords{ Vec2f(0, 0), Vec2f(1, 0),Vec2f(0, 1) };
+	std::vector<Primitive> primitives{
+		Primitive({ v0_, v1_, v2_ }, normals, texcoords),
+		Primitive({ v1_, v3_, v2_ }, normals, texcoords)
+	};
+
+	return std::make_unique< Mesh >(primitives, nullptr, this);
+}
+
 SphereLight::SphereLight(const Vec3f& center, float raduis, const Matrix44f& l2w, const Vec3f& Le) : AreaLight(l2w, Le)
 , center_(multVecMatrix(center, l2w))
 , radius_(raduis)
 {
-	lightObject = std::make_shared<SphereMesh>(center_, radius_, 10, 10, nullptr, this);
+
+}
+
+std::unique_ptr<Object> SphereLight::makeObject()
+{
+	return std::make_unique < SphereMesh >(center_, radius_, 10, 10, nullptr, this);
 }
 
 Vec3f SphereLight::UniformSampleSphere(const float& r1, const float& r2) const

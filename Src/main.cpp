@@ -15,6 +15,50 @@ std::string getCurrentDateTime()
 	return ss.str();
 }
 
+void testCornellbox()
+{
+	const uint32_t width = 780;
+	const uint32_t height = 585;
+	const uint32_t n_samples = 16;
+	const uint32_t max_depth = 3;
+
+	Image image(width, height);
+	const float aspect_ratio = static_cast<float>(width) / height;
+	const Matrix44f cornellbox(
+		-1.0, 0, 0, 0,
+		0, 1.0, 0, 0,
+		0, 0, -1.0, 0,
+		278, 274.4, -750.0, 1);
+	const float FOV = 60.0f;
+	const auto camera =
+		std::make_unique<PinholeCamera>(aspect_ratio, cornellbox, FOV);
+
+	Scene scene;
+	std::string dataDir = DATA_DIR;
+	scene.loadObj(dataDir + "cornell_box.obj");
+
+	QuadLight* light;
+	//scene.addAreaLight(light);
+
+	UniformSampler sampler;
+	//NormalIntegrator integrator(camera.get(), 1);
+	//WhittedIntegrator integrator(camera.get());
+	DirectIntegrator integrator(camera.get(), 16);
+	//IndirectIntegrator integrator(camera.get(), 16, 3);
+	//GIIntegrator integrator(camera.get(), 16, 3);
+	//PathTracing integrator(camera.get(), 100, 10);
+	integrator.render(scene, sampler, image);
+
+	// gamma correction
+	image.gammaCorrection(1.2f);
+
+	// output image
+	auto output = image.writeMat();
+	cv::imwrite(getCurrentDateTime() + "-cornellbox.jpg", output);
+	cv::imshow("output", output);
+	cv::waitKey(0);
+}
+
 int main(int argc, char** argv)
 {
 	const uint32_t width = 780;
@@ -51,11 +95,11 @@ int main(int argc, char** argv)
 	Scene scene;
 	std::string dataDir = DATA_DIR;
 	scene.loadObj(dataDir + "cornell_box.obj");
-	//scene.addObj("sphere_mesh", std::make_shared<SphereMesh>(Vec3f(0.0), 1.0f, 10, 10, material.get(), nullptr));
+	//scene.addObj("sphere_mesh", std::make_unique<SphereMesh>(Vec3f(0.0), 1.0f, 10, 10, material.get(), nullptr));
 	//scene.loadObj(dataDir + "cube.obj");
-	//scene.addObj("sphere_diffuse", std::make_shared<Sphere>(Vec3f(0.0), 1.0f, material.get(), nullptr));
-	//scene.addObj("sphere_mirror", std::make_shared<Sphere>(Vec3f(1.5), 1.0f, material.get(), nullptr));
-	//scene.addObj("sphere_dielectric", std::make_shared<Sphere>(Vec3f(-1.0, 1.0, -1.0), 1.0f, material.get(), nullptr));
+	//scene.addObj("sphere_diffuse", std::make_unique<Sphere>(Vec3f(0.0), 1.0f, material.get(), nullptr));
+	//scene.addObj("sphere_mirror", std::make_unique<Sphere>(Vec3f(1.5), 1.0f, material.get(), nullptr));
+	//scene.addObj("sphere_dielectric", std::make_unique<Sphere>(Vec3f(-1.0, 1.0, -1.0), 1.0f, material.get(), nullptr));
 	//scene.makeDeltaLight();
 
 	scene.makeAreaLight();
@@ -65,9 +109,9 @@ int main(int argc, char** argv)
 	UniformSampler sampler;
 	//NormalIntegrator integrator(camera.get(), 1);
 	//WhittedIntegrator integrator(camera.get());
-	//DirectIntegrator integrator(camera.get(), 16);
+	DirectIntegrator integrator(camera.get(), 16);
 	//IndirectIntegrator integrator(camera.get(), 16, 3);
-	GIIntegrator integrator(camera.get(), 16, 3);
+	//GIIntegrator integrator(camera.get(), 16, 3);
 	//PathTracing integrator(camera.get(), 100, 10);
 	integrator.render(scene, sampler, image);
 

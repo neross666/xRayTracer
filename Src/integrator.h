@@ -374,8 +374,8 @@ private:
 class WhittedIntegrator : public PathIntegrator
 {
 public:
-	WhittedIntegrator(const Camera* camera, uint32_t maxDepth = 3)
-		: PathIntegrator(camera, 1), m_maxDepth(maxDepth) {
+	WhittedIntegrator(const Camera* camera, uint32_t n_samples, uint32_t maxDepth = 3)
+		: PathIntegrator(camera, n_samples), m_maxDepth(maxDepth) {
 	}
 	virtual ~WhittedIntegrator() = default;
 

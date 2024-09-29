@@ -46,7 +46,7 @@ void Scene::loadObj(const std::filesystem::path& filepath)
 
 	std::string inputfile = filepath.generic_string();
 	tinyobj::ObjReaderConfig reader_config;
-	reader_config.mtl_search_path = DATA_DIR; // Path to material files
+	reader_config.mtl_search_path = filepath.parent_path().string(); // Path to material files
 	reader_config.triangulate = true;
 
 	tinyobj::ObjReader reader;
@@ -145,61 +145,24 @@ void Scene::loadObj(const std::filesystem::path& filepath)
 		}
 
 
-		m_objects[shapes[s].name] = std::make_shared<Mesh>(primitives, m_material[materialID].get(), nullptr);
+		m_objects[shapes[s].name] = std::make_unique<Mesh>(primitives, m_material[materialID].get(), nullptr);
 	}
 }
 
-void Scene::addObj(std::string name, std::shared_ptr<Object> obj)
+void Scene::addObj(std::string name, std::unique_ptr<Object> obj)
 {
-	m_objects[name] = obj;
+	m_objects[name] = std::move(obj);
 }
 
-void Scene::makeDeltaLight()
+void Scene::addDeltaLight(std::string name, std::unique_ptr<DeltaLight> light)
 {
-	/*Matrix44f l2w(
-		1.0, 0.0, 0.0, 0.0,
-		0.0, 0.0, 1.0, 0.0,
-		0.0, 1.0, 0.0, 0.0,
-		0.0, 0.0, 0.0, 1.0);*/
-	Matrix44f l2w(0.95292, 0.289503, 0.0901785, 0, -0.0960954, 0.5704, -0.815727, 0, -0.287593, 0.768656, 0.571365, 0, 0, 0, 0, 1);
-	m_deltaLights.push_back(std::make_unique<DistantLight>(l2w, Vec3f(1.0, 1.0, 1.0), 1.0f));
-
-	Matrix44f l2w2(
-		1.0, 0.0, 0.0, 0.0,
-		0.0, 1.0, 0.0, 0.0,
-		0.0, 0.0, 1.0, 0.0,
-		5.0, 5.0, -1.0, 1.0);
-	//m_deltaLights.push_back(std::make_unique<PointLight>(l2w2, Vec3f(0.63, 0.33, 0.03), 50.0f));
-	//m_deltaLights.push_back(std::make_unique<PointLight>(l2w2, Vec3f(0.0, 1.0, 0.0), 500.0f));
-
-
-	Matrix44f l2w3(
-		1.0, 0.0, 0.0, 0.0,
-		0.0, 1.0, 0.0, 0.0,
-		0.0, 0.0, 1.0, 0.0,
-		0.0, 0.0, 2.0, 1.0);
-	//m_deltaLights.push_back(std::make_unique<PointLight>(l2w3, Vec3f(0.63, 0.33, 0.03), 2.0f));
-	//m_deltaLights.push_back(std::make_unique<PointLight>(l2w3, Vec3f(1.0, 1.0, 1.0), 2.0f));
+	m_deltaLights.push_back(std::move(light));
 }
 
-void Scene::makeAreaLight()
+void Scene::addAreaLight(std::string name, std::unique_ptr<AreaLight> light)
 {
-	auto light = std::make_unique<QuadLight>(
-		Vec3f(343.0, 548.0, 227.0),
-		Vec3f(343.0, 548.0, 332.0),
-		Vec3f(213.0, 548.0, 227.0),
-		Matrix44f(), 15.0f * Vec3f(1.0, 1.0, 1.0));
-
-	addObj("QuadLight", light->getObject());
+	addObj(name, light->makeObject());
 	m_areaLights.push_back(std::move(light));
-
-
-
-	Matrix44<float> xfm_sphere(.2, 0, 0, 0, 0, .2, 0, 0, 0, 0, .2, 0, 0, 0, -4, 1);
-	std::shared_ptr<SphereLight> sphere_light = std::make_shared<SphereLight>(Vec3f(0.0f), 0.2f, xfm_sphere, Vec3f(10.0f));
-
-	//addObj("SphereLight", sphere_light->getObject());
-	//m_areaLights.push_back(sphere_light);
 }
 
 const std::vector<std::unique_ptr<DeltaLight>>& Scene::getDeltaLights() const

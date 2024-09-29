@@ -15,15 +15,15 @@ public:
 
 	void loadObj(const std::filesystem::path& filepath);
 
-	void addObj(std::string name, std::shared_ptr<Object> obj);
+	void addObj(std::string name, std::unique_ptr<Object> obj);
 
 	void build() {
 
 	}
 
-	void makeDeltaLight();
+	void addDeltaLight(std::string name, std::unique_ptr<DeltaLight> light);
 
-	void makeAreaLight();
+	void addAreaLight(std::string name, std::unique_ptr<AreaLight> light);
 
 	const std::vector<std::unique_ptr<DeltaLight>>& getDeltaLights() const;
 
@@ -38,7 +38,7 @@ protected:
 private:
 	std::vector<std::unique_ptr<DeltaLight>> m_deltaLights;
 	std::vector<std::unique_ptr<AreaLight>> m_areaLights;
-	std::unordered_map<std::string, std::shared_ptr<Object>> m_objects;
+	std::unordered_map<std::string, std::unique_ptr<Object>> m_objects;
 	std::vector<std::unique_ptr<Material>> m_material;
 };
 

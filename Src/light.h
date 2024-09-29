@@ -70,12 +70,11 @@ public:
 		}
 	}
 
-	std::shared_ptr<Object> getObject() { return lightObject; };
+	virtual std::unique_ptr<Object> makeObject() = 0;
 
 protected:
 	Vec3f Le_;
 	Matrix44f lightToWorld;
-	std::shared_ptr<Object> lightObject;
 };
 
 
@@ -87,6 +86,7 @@ public:
 
 	Vec3f sample(const IntersectInfo& info, Vec3<float>& wi, float& pdf, float& tmax, Sampler& sample) const override;
 
+	virtual std::unique_ptr<Object> makeObject() override;
 
 private:
 	Vec3f uniformSampleTriangle(const float& u, const float& v, const Vec3f& A, const Vec3f& B, const Vec3f& C) const;
@@ -110,6 +110,7 @@ public:
 
 	Vec3f sample(const IntersectInfo& info, Vec3<float>& wi, float& pdf, float& tmax, Sampler& sample) const override;
 
+	virtual std::unique_ptr<Object> makeObject() override;
 private:
 	Vec3f v0_;
 	Vec3f v1_;
@@ -195,6 +196,7 @@ public:
 		return Le_;
 	}
 
+	virtual std::unique_ptr<Object> makeObject() override;
 
 private:
 	Vec3f UniformSampleSphere(const float& r1, const float& r2) const;
