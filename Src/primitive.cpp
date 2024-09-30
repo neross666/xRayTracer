@@ -1,6 +1,7 @@
 ﻿#include "primitive.h"
 #include "light.h"
 #include "material.h"
+#include "Medium.h"
 
 
 Primitive::Primitive(
@@ -56,6 +57,13 @@ Vec3f Object::Le(const SurfaceInfo& info, const Vec3f& wi) const
 		return Vec3f(0.0f);
 
 	return m_areaLight->Le(info, wi);
+}
+
+bool Object::sampleMedium(const Ray& ray, IntersectInfo info, Sampler& sampler, Vec3f& pos, Vec3f& dir, Vec3f& throughput) const
+{
+	if (m_medium == nullptr)
+		return false;
+	return m_medium->sampleMedium(ray, info, sampler, pos, dir, throughput);
 }
 
 bool Mesh::intersect(const Ray& ray, IntersectInfo& info) const

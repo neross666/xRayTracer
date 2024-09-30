@@ -27,6 +27,7 @@ SET(Headers
 	"primitive.h" 
 	"material.h"
 	"renderer.h"
+	"medium.h"
 	)
 
 # 

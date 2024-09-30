@@ -33,7 +33,7 @@ public:
 
 		IntersectInfo info;
 		if (scene.intersect(ray_in, info)) {
-			//return 0.5f * (info.surfaceInfo.ns + 1.0f);
+			return 0.5f * (info.surfaceInfo.ns + 1.0f);
 
 			/*auto tt = dot(info.surfaceInfo.ns, -ray_in.direction);
 			auto faceRatio = std::max(0.f, dot(info.surfaceInfo.ns, -ray_in.direction));
@@ -401,7 +401,7 @@ private:
 class VolumePathTracing : public Integrator
 {
 public:
-	VolumePathTracing(uint32_t maxDepth = 100)
+	VolumePathTracing(uint32_t maxDepth)
 		: m_maxDepth(maxDepth) {
 	}
 	virtual ~VolumePathTracing() = default;
@@ -412,13 +412,17 @@ public:
 		Vec3f radiance(0);
 		Ray ray = ray_in;
 		ray.throughput = Vec3f(1, 1, 1);
+		Vec3f background(1.0f);
 
 		uint32_t depth = 0;
 		while (depth < m_maxDepth)
 		{
 			IntersectInfo info;
 			if (!scene.intersect(ray, info))
+			{
+				radiance += ray.throughput * background;
 				break;
+			}
 
 			// russian roulette
 			if (depth > 0) {
@@ -438,23 +442,23 @@ public:
 			}
 
 			// sample medium
-			//bool is_scattered = false;
-			//if (ray.hasMedium()) {
-			//	const Medium* medium = ray.getCurrentMedium();
+			bool is_scattered = false;
+			if (info.hitObject->hasMedium()) {
+				Vec3f pos;
+				Vec3f dir;
+				Vec3f throughput_medium;
+				is_scattered = info.hitObject->sampleMedium(ray, info, sampler, pos, dir,
+					throughput_medium);
 
-			//	Vec3f pos;
-			//	Vec3f dir;
-			//	Vec3f throughput_medium;
-			//	is_scattered = medium->sampleMedium(ray, info.t, sampler, pos, dir,
-			//		throughput_medium);
+				// advance ray
+				ray.origin = pos;
+				ray.direction = dir;
 
-			//	// advance ray
-			//	ray.origin = pos;
-			//	ray.direction = dir;
+				// update throughput
+				ray.throughput *= throughput_medium;
 
-			//	// update throughput
-			//	ray.throughput *= throughput_medium;
-			//}
+				depth++;
+			}
 		}
 
 

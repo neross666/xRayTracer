@@ -1,5 +1,6 @@
 ﻿#include "light.h"
 #include "primitive.h"
+#include <spdlog/spdlog.h>
 
 
 TriangleLight::TriangleLight(const Vec3f& v0, const Vec3f& v1, const Vec3f& v2, const Matrix44f& l2w, const Vec3f& Le) : AreaLight(l2w, Le)
@@ -84,12 +85,14 @@ SphereLight::SphereLight(const Vec3f& center, float raduis, const Matrix44f& l2w
 , center_(multVecMatrix(center, l2w))
 , radius_(raduis)
 {
-
+	spdlog::info("[SphereLight] center: ({}, {}, {})", center_[0], center_[1], center_[2]);
+	spdlog::info("[SphereLight] raduis: {}", radius_);
+	spdlog::info("[SphereLight] le: ({}, {}, {})", Le[0], Le[1], Le[2]);
 }
 
 std::unique_ptr<Object> SphereLight::makeObject()
 {
-	return std::make_unique < SphereMesh >(center_, radius_, 10, 10, nullptr, this);
+	return std::make_unique < SphereMesh >(center_, radius_, 5, 5, nullptr, this);
 }
 
 Vec3f SphereLight::UniformSampleSphere(const float& r1, const float& r2) const

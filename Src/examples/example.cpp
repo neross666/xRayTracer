@@ -2,6 +2,7 @@
 #include "image.h"
 #include "integrator.h"
 #include "material.h"
+#include "renderer.h"
 
 
 std::string getCurrentDateTime()
@@ -73,15 +74,21 @@ int main(int argc, char** argv)
 	//scene.addAreaLight("SphereLight", std::make_unique<SphereLight>(Vec3f(0.0f), 0.2f, xfm_sphere, Vec3f(10.0f)));
 
 
+	// integrator
+	const auto integrator = std::make_unique<NormalIntegrator>();
+	//const auto integrator = std::make_unique<WhittedIntegrator>(max_depth);
+	//const auto integrator = std::make_unique<DirectIntegrator>();
+	//const auto integrator = std::make_unique<IndirectIntegrator>(max_depth);
+	//const auto integrator = std::make_unique<GIIntegrator>(max_depth);
+	//const auto integrator = std::make_unique<VolumePathTracing>(max_depth);
+
+
 	// render
 	UniformSampler sampler;
-	//NormalIntegrator integrator(camera.get(), 1);
-	WhittedIntegrator integrator(camera.get(), n_samples, max_depth);
-	//DirectIntegrator integrator(camera.get(), 16);
-	//IndirectIntegrator integrator(camera.get(), 16, 3);
-	//GIIntegrator integrator(camera.get(), 16, 3);
-	//PathTracing integrator(camera.get(), 100, 10);
-	integrator.render(scene, sampler, image);
+	auto renderer = std::make_unique<NormalRenderer>(n_samples, camera.get(), integrator.get());
+	//auto renderer = std::make_unique<ParallelRenderer>(n_samples, camera.get(), integrator.get());
+	renderer->render(scene, sampler, image);
+
 
 	// gamma correction
 	image.gammaCorrection(1.2f);

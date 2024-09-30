@@ -36,10 +36,11 @@ private:
 
 class Material;
 class AreaLight;
+class Medium;
 class Object
 {
 public:
-	Object(Material* material, AreaLight* light) : m_material(material), m_areaLight(light) {
+	Object(Material* material, AreaLight* light, Medium* medium) : m_material(material), m_areaLight(light), m_medium(medium) {
 	}
 
 	virtual ~Object() = default;
@@ -56,9 +57,14 @@ public:
 		return m_areaLight != nullptr;
 	}
 
+	bool hasMedium() const {
+		return m_medium != nullptr;
+	}
+
+
 	MaterialType materialType() const;
 
-
+	// evaluate BRDF
 	Vec3f evaluateBxDF(const Vec3f& wo, const Vec3f& wi, const SurfaceInfo& sinfo) const;
 
 	// sample dir and evaluate BRDF
@@ -67,18 +73,27 @@ public:
 	// 
 	Vec3f sampleDir(const SurfaceInfo& sinfo, Sampler& sampler, float& pdf) const;
 
+
+
 	Vec3f Le(const SurfaceInfo& info, const Vec3f& wi) const;
+
+
+
+	bool sampleMedium(const Ray& ray, IntersectInfo info,
+		Sampler& sampler, Vec3f& pos, Vec3f& dir,
+		Vec3f& throughput) const;
 
 protected:
 	Material* m_material = nullptr;
 	AreaLight* m_areaLight = nullptr;
+	Medium* m_medium = nullptr;
 };
 
 class Sphere : public Object
 {
 public:
 	Sphere(Vec3f center, float raduis, Material* material, AreaLight* light = nullptr)
-		: m_center(center), m_raduis(raduis), m_raduis2(raduis* raduis), Object(material, light) {
+		: m_center(center), m_raduis(raduis), m_raduis2(raduis* raduis), Object(material, light, nullptr) {
 
 	}
 	~Sphere() = default;
@@ -166,12 +181,12 @@ private:
 class Mesh : public Object
 {
 public:
-	Mesh(Material* material, AreaLight* light) : Object(material, light) {}
+	Mesh(Material* material, AreaLight* light) : Object(material, light, nullptr) {}
 	Mesh(std::vector<Primitive>&& primitives, Material* material, AreaLight* light = nullptr)
-		: m_primitives(primitives), Object(material, light) {
+		: m_primitives(primitives), Object(material, light, nullptr) {
 	}
 	Mesh(const std::vector<Primitive>& primitives, Material* material, AreaLight* light = nullptr)
-		: m_primitives(primitives), Object(material, light) {
+		: m_primitives(primitives), Object(material, light, nullptr) {
 	}
 	~Mesh() = default;
 
@@ -214,27 +229,32 @@ public:
 	~BoxMesh() = default;
 
 public:
-	BoxMesh(Vec3f _min, Vec3f _max)
-		: pMin(_min), pMax(_max), Object(nullptr, nullptr) {
-		//Triangulate();
+	BoxMesh(AABB box, Medium* medium)
+		: box(box), Object(nullptr, nullptr, medium) {
+
 	}
 
 	// Slab method for ray-box intersection
 	bool intersect(const Ray& ray, IntersectInfo& info) const override {
 		Vec3f direction_inv = 1.0 / ray.direction;
-		Vec3f t_top = direction_inv * (pMax - ray.origin);
-		Vec3f t_bottom = direction_inv * (pMin - ray.origin);
+		Vec3f t_top = direction_inv * (box.pMax - ray.origin);
+		Vec3f t_bottom = direction_inv * (box.pMin - ray.origin);
 		Vec3f t_min = vmin(t_top, t_bottom);
 		Vec3f t_max = vmax(t_top, t_bottom);
 
 		float t_0 = std::max(std::max(t_min[0], t_min[1]), t_min[2]);
 		float t_1 = std::min(std::min(t_max[0], t_max[1]), t_max[2]);
 
-		if (t_0 > t_1 || t_1 < 0.0f) {
+		if (t_0 > t_1 || t_1 <= 0.0f) {
 			return false;
 		}
 
 		t_0 = std::max(t_0, 0.0f); // Ensure t_0 is not negative
+
+		info.hitObject = this;
+		info.t = t_0;
+		info.t1 = t_1;
+
 		return true;
 	}
 
@@ -242,13 +262,7 @@ public:
 		return true;
 	}
 
-private:
-	void Triangulate();
 
 private:
-	Vec3f pMin = Vec3f(0.0f);
-	Vec3f pMax = Vec3f(0.0f);
-
-private:
-
+	AABB box;
 };

@@ -32,7 +32,13 @@ struct SurfaceInfo {
 
 class Object;
 struct IntersectInfo {
-	float t = kInfinity;  // distance to the hit point
+	float t1 = kInfinity;	// [medium]:distance To Surface
+	float t = kInfinity;	// distance to the hit point
 	SurfaceInfo surfaceInfo;
 	const Object* hitObject = nullptr;
+};
+
+struct AABB {
+	Vec3f pMin;
+	Vec3f pMax;
 };
