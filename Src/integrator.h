@@ -412,7 +412,7 @@ public:
 		Vec3f radiance(0);
 		Ray ray = ray_in;
 		ray.throughput = Vec3f(1, 1, 1);
-		Vec3f background(1.0f);
+		Vec3f background(0.0f);
 
 		uint32_t depth = 0;
 		while (depth < m_maxDepth)
@@ -437,7 +437,7 @@ public:
 			// Le
 			if (info.hitObject->hasAreaLight()) {
 				radiance += ray.throughput *
-					info.hitObject->Le(info.surfaceInfo, -ray.direction);
+					info.hitObject->Le(info.surfaceInfo, ray.direction);
 				break;
 			}
 

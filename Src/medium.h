@@ -24,7 +24,7 @@ public:
 	float evaluate(const Vec3f& wo, const Vec3f& wi) const override
 	{
 		const float cosTheta = dot(wo, wi);
-		const float denom = 1 + g * g + 2 * g * cosTheta;
+		const float denom = 1 + g * g - 2 * g * cosTheta;
 		return PI_MUL_4_INV * (1 - g * g) / (denom * std::sqrt(denom));
 	}
 
@@ -32,7 +32,7 @@ public:
 	float sampleDirection(const Vec3f& wo, Sampler& sampler,
 		Vec3f& wi) const override
 	{
-		const Vec2 u = sampler.getNext2D();
+		const Vec2f u = sampler.getNext2D();
 
 		// sample cosTheta
 		float cosTheta;

@@ -21,8 +21,8 @@ int main(int argc, char** argv)
 {
 	const uint32_t width = 780;
 	const uint32_t height = 585;
-	const uint32_t n_samples = 16;
-	const uint32_t max_depth = 10;
+	const uint32_t n_samples = 1024;
+	const uint32_t max_depth = 8;
 
 	Image image(width, height);
 	const float aspect_ratio = static_cast<float>(width) / height;
@@ -48,7 +48,7 @@ int main(int argc, char** argv)
 		0, 1, 0, 0,
 		0, 0, 1, 0,
 		0, 1.75, 0, 1);
-	//scene.addAreaLight("SphereLight", std::make_unique<SphereLight>(Vec3f(0.0f), 0.2f, xfm_sphere, Vec3f(10.0f)));
+	scene.addAreaLight("SphereLight", std::make_unique<SphereLight>(Vec3f(0.0f), 0.2f, xfm_sphere, Vec3f(10.0f)));
 
 
 
