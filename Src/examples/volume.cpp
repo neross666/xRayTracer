@@ -21,12 +21,11 @@ int main(int argc, char** argv)
 {
 	const uint32_t width = 780;
 	const uint32_t height = 585;
-	const uint32_t n_samples = 1024;
+	const uint32_t n_samples = 16;
 	const uint32_t max_depth = 8;
 
 	Image image(width, height);
 	const float aspect_ratio = static_cast<float>(width) / height;
-
 
 	const Matrix44f c2w(
 		1.0, 0.0, 0.0, 0.0,
@@ -54,10 +53,6 @@ int main(int argc, char** argv)
 
 	// integrator
 	//const auto integrator = std::make_unique<NormalIntegrator>();
-	//const auto integrator = std::make_unique<WhittedIntegrator>(max_depth);
-	//const auto integrator = std::make_unique<DirectIntegrator>();
-	//const auto integrator = std::make_unique<IndirectIntegrator>(max_depth);
-	//const auto integrator = std::make_unique<GIIntegrator>(max_depth);
 	const auto integrator = std::make_unique<VolumePathTracing>(max_depth);
 
 
