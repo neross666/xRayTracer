@@ -1,0 +1,5 @@
+/.vs
+/Src/out
+/Src/.vs
+/Src/examples/out
+/Src/CMakeSettings.json

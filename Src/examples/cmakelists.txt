@@ -1,0 +1,59 @@
+﻿
+add_executable(cornellbox
+	"cornellbox.cpp")
+
+ target_compile_definitions(cornellbox
+    PRIVATE 
+	DATA_DIR="${PROJECT_SOURCE_DIR}/testdata/"	
+)
+
+ target_include_directories(cornellbox
+PRIVATE
+	${OpenCV_INCLUDE_LIBS}
+	)
+ 
+target_link_libraries(cornellbox 
+PRIVATE 
+	${OpenCV_LIBS}
+	xRayTracer
+	)
+
+
+add_executable(example
+  "example.cpp")
+
+ target_compile_definitions(example
+    PRIVATE 
+	DATA_DIR="${PROJECT_SOURCE_DIR}/testdata/"	
+)
+
+ target_include_directories(example
+PRIVATE
+	${OpenCV_INCLUDE_LIBS}
+	)
+ 
+target_link_libraries(example 
+PRIVATE 
+	${OpenCV_LIBS}
+	xRayTracer
+	)
+
+
+add_executable(volume
+  "volume.cpp")
+
+ target_compile_definitions(volume
+    PRIVATE 
+	DATA_DIR="${PROJECT_SOURCE_DIR}/testdata/"	
+)
+
+ target_include_directories(volume
+PRIVATE
+	${OpenCV_INCLUDE_LIBS}
+	)
+ 
+target_link_libraries(volume 
+PRIVATE 
+	${OpenCV_LIBS}
+	xRayTracer
+	)
