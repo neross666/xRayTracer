@@ -38,7 +38,7 @@ public:
 		float cosTheta;
 		if (std::abs(g) < 1e-3) {
 			// when g is small, sample direction uniformly
-			cosTheta = 1 - 2 * u[0];
+			cosTheta = 2 * u[0] - 1.0f;
 		}
 		else {
 			const float sqrTerm = (1 - g * g) / (1 - g + 2 * g * u[0]);
@@ -54,8 +54,8 @@ public:
 
 		// local to world transform
 		Vec3f t, b;
-		orthonormalBasis(-wo, t, b);
-		wi = localToWorld(wi_local, t, -wo, b);
+		orthonormalBasis(wo, t, b);
+		wi = localToWorld(wi_local, t, wo, b);
 
 		return evaluate(wo, wi);
 	}
@@ -144,7 +144,7 @@ public:
 
 		// in-scattering
 		// sample direction
-		phaseFunction->sampleDirection(-ray.direction, sampler, dir);
+		phaseFunction->sampleDirection(ray.direction, sampler, dir);
 
 		pos = ray(info.t + t);
 		const Vec3f tr = analyticTransmittance(t, sigma_t);
