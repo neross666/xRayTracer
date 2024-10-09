@@ -40,6 +40,7 @@ SET(Sources
 	"geometry.cpp" 
 	"scene.cpp"
 	"renderer.cpp"
+	"sampler.cpp"
 	)
 
 add_library(xRayTracer STATIC 

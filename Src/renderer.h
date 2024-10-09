@@ -12,7 +12,7 @@ public:
 	virtual ~Renderer() = default;
 
 	// render scene
-	virtual void render(const Scene& scene, Sampler& sampler, Image& image) const = 0;
+	virtual void render(const Scene& scene, Sampler::SamplerType st, Image& image) const = 0;
 
 protected:
 	const Camera* camera;
@@ -26,10 +26,10 @@ public:
 	~NormalRenderer() = default;
 
 	// render scene
-	virtual void render(const Scene& scene, Sampler& sampler, Image& image) const override;
+	virtual void render(const Scene& scene, Sampler::SamplerType st, Image& image) const override;
 
 protected:
-	void doRender(const Scene& scene, Sampler& sampler, Image& image, int i, int j) const;
+	void doRender(const Scene& scene, Sampler::SamplerType st, Image& image, int i, int j) const;
 
 protected:
 	// number of samples in each pixel
@@ -44,5 +44,5 @@ public:
 	~ParallelRenderer() = default;
 
 	// render scene
-	void render(const Scene& scene, Sampler& sampler, Image& image) const override;
+	void render(const Scene& scene, Sampler::SamplerType st, Image& image) const override;
 };

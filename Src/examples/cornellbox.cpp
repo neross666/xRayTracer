@@ -58,10 +58,9 @@ int main(int argc, char** argv)
 
 
 	// render
-	UniformSampler sampler;
 	auto renderer = std::make_unique<NormalRenderer>(n_samples, camera.get(), integrator.get());
 	//auto renderer = std::make_unique<ParallelRenderer>(n_samples, camera.get(), integrator.get());
-	renderer->render(scene, sampler, image);
+	renderer->render(scene, UniformSampler::SamplerType::Uniform, image);
 
 
 	// gamma correction

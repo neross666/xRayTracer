@@ -5,7 +5,7 @@
 #include <execution>
 
 
-void NormalRenderer::render(const Scene& scene, Sampler& sampler, Image& image) const
+void NormalRenderer::render(const Scene& scene, Sampler::SamplerType st, Image& image) const
 {
 	const uint32_t width = image.getWidth();
 	const uint32_t height = image.getHeight();
@@ -15,7 +15,7 @@ void NormalRenderer::render(const Scene& scene, Sampler& sampler, Image& image) 
 	{
 		for (uint32_t j = 0/*width / 2*/; j < width; ++j)
 		{
-			doRender(scene, sampler, image, i, j);
+			doRender(scene, st, image, i, j);
 		}
 		std::cout << "\rprogress: " << i << "/" << height;
 	}
@@ -26,13 +26,13 @@ void NormalRenderer::render(const Scene& scene, Sampler& sampler, Image& image) 
 	image /= Vec3f(n_samples);
 }
 
-void NormalRenderer::doRender(const Scene& scene, Sampler& sampler, Image& image, int i, int j) const
+void NormalRenderer::doRender(const Scene& scene, Sampler::SamplerType st, Image& image, int i, int j) const
 {
 	const uint32_t width = image.getWidth();
 	const uint32_t height = image.getHeight();
 
 	// init sampler for each pixel
-	const std::unique_ptr<Sampler> sampler_per_pixel = sampler.clone();
+	const std::unique_ptr<Sampler> sampler_per_pixel = Sampler::makeSampler(st);
 	sampler_per_pixel->setSeed(j + width * i);
 
 	// warmup sampler
@@ -80,7 +80,7 @@ void NormalRenderer::doRender(const Scene& scene, Sampler& sampler, Image& image
 	}
 }
 
-void ParallelRenderer::render(const Scene& scene, Sampler& sampler, Image& image) const
+void ParallelRenderer::render(const Scene& scene, Sampler::SamplerType st, Image& image) const
 {
 	auto indices = image.getImageIdx();
 	const uint32_t width = image.getWidth();
@@ -88,7 +88,7 @@ void ParallelRenderer::render(const Scene& scene, Sampler& sampler, Image& image
 
 	spdlog::info("[PathIntegrator] rendering...");
 	std::for_each(std::execution::par_unseq, indices.begin(), indices.end(), [&](Image::ImageIdx idx) {
-		doRender(scene, sampler, image, idx.i, idx.j);
+		doRender(scene, st, image, idx.i, idx.j);
 		}
 	);
 
