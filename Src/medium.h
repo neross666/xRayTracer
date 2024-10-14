@@ -105,6 +105,7 @@ protected:
 	const std::unique_ptr<PhaseFunction> phaseFunction = nullptr;
 };
 
+// with spectral MIS
 class HomogeneousMedium : public Medium
 {
 public:
@@ -151,6 +152,111 @@ public:
 		const Vec3f pdf_distance = sigma_t * tr;
 		const Vec3f pdf = pmf_wavelength * pdf_distance;
 		throughput = (tr * sigma_s) / (pdf[0] + pdf[1] + pdf[2]);
+
+		return true;
+	}
+
+private:
+	const Vec3f sigma_a;	// absorption coefficient
+	const Vec3f sigma_s;	// scattering coefficient
+	const Vec3f sigma_t;	// extinction coefficient
+	const AABB box;			// bounding box
+};
+
+// achromatic version
+class HomogeneousMediumAchromatic : public Medium
+{
+public:
+	HomogeneousMediumAchromatic(float g, float a, float s, AABB box) : Medium(g),
+		sigma_a(a), sigma_s(s), sigma_t(a + s), box(box) {}
+	~HomogeneousMediumAchromatic() = default;
+
+	std::unique_ptr<Object> makeObject() override {
+		return std::make_unique< BoxMesh >(box, this);
+	}
+
+	bool sampleMedium(const Ray& ray, IntersectInfo info,
+		Sampler& sampler, Vec3f& pos, Vec3f& dir,
+		Vec3f& throughput) const override
+	{
+
+		// sample collision-free distance
+		const float t = -std::log(std::max(1.0f - sampler.getNext1D(), 0.0f)) /
+			sigma_t;
+
+		// hit volume boundary, no collision
+		float distToSurface = info.t1 - info.t;
+		if (t > distToSurface - RAY_EPS) {
+			pos = ray(info.t1 + RAY_EPS);
+			dir = ray.direction;
+
+			throughput = Vec3f(1.0f);
+			return false;
+		}
+
+		// in-scattering
+		// sample direction
+		phaseFunction->sampleDirection(ray.direction, sampler, dir);
+
+		pos = ray(info.t + t);
+		throughput = Vec3f(sigma_s / sigma_t);
+
+		return true;
+	}
+
+private:
+	const float sigma_a;	// absorption coefficient
+	const float sigma_s;	// scattering coefficient
+	const float sigma_t;	// extinction coefficient
+	const AABB box;			// bounding box
+};
+
+// no spectral MIS version
+class HomogeneousMediumNoMIS : public Medium
+{
+public:
+	HomogeneousMediumNoMIS(float g, Vec3f a, Vec3f s, AABB box) : Medium(g),
+		sigma_a(a), sigma_s(s), sigma_t(a + s), box(box) {}
+	~HomogeneousMediumNoMIS() = default;
+
+	std::unique_ptr<Object> makeObject() override {
+		return std::make_unique< BoxMesh >(box, this);
+	}
+
+	bool sampleMedium(const Ray& ray, IntersectInfo info,
+		Sampler& sampler, Vec3f& pos, Vec3f& dir,
+		Vec3f& throughput) const override
+	{
+		// sample wavelength
+		int channel = 3 * sampler.getNext1D();
+		if (channel == 3) channel--;
+		const float pmf_wavelength = 1.0f / 3.0f;
+
+		// sample collision-free distance
+		const float t = -std::log(std::max(1.0f - sampler.getNext1D(), 0.0f)) /
+			sigma_t[channel];
+		const float pdf_distance =
+			sigma_t[channel] * std::exp(-sigma_t[channel] * t);
+
+		// hit volume boundary, no collision
+		float distToSurface = info.t1 - info.t;
+		if (t > distToSurface - RAY_EPS) {
+			pos = ray(info.t1 + RAY_EPS);
+			dir = ray.direction;
+
+			const Vec3f tr = analyticTransmittance(distToSurface, sigma_t);
+			const float p_surface = std::exp(-sigma_t[channel] * distToSurface);
+			throughput = 1.0f / 3.0f * tr / (pmf_wavelength * p_surface);
+			return false;
+		}
+
+		// in-scattering
+		// sample direction
+		phaseFunction->sampleDirection(ray.direction, sampler, dir);
+
+		pos = ray(info.t + t);
+		throughput = 1.0f / 3.0f * analyticTransmittance(t, sigma_t) * sigma_s /
+			(pmf_wavelength * pdf_distance);
 
 		return true;
 	}
