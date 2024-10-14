@@ -429,14 +429,14 @@ public:
 			}
 
 			// russian roulette
-// 			if (depth > 0) {
-// 				const float russian_roulette_prob = std::min(
-// 					(ray.throughput[0] + ray.throughput[1] + ray.throughput[2]) /
-// 					3.0f,
-// 					1.0f);
-// 				if (sampler.getNext1D() >= russian_roulette_prob) { break; }
-// 				ray.throughput /= russian_roulette_prob;
-// 			}
+			if (depth > 0) {
+				const float russian_roulette_prob = std::min(
+					(ray.throughput[0] + ray.throughput[1] + ray.throughput[2]) /
+					3.0f,
+					1.0f);
+				if (sampler.getNext1D() >= russian_roulette_prob) { break; }
+				ray.throughput /= russian_roulette_prob;
+			}
 
 			// Le
 			if (info.hitObject->hasAreaLight()) {
