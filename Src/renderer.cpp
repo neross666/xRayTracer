@@ -11,9 +11,9 @@ void NormalRenderer::render(const Scene& scene, Sampler::SamplerType st, Image& 
 	const uint32_t height = image.getHeight();
 
 	spdlog::info("[PathIntegrator] rendering...");
-	for (uint32_t i = 0/*height / 2*/; i < height; ++i)
+	for (uint32_t i = 0; i < height; ++i)
 	{
-		for (uint32_t j = 0/*width / 2*/; j < width; ++j)
+		for (uint32_t j = 0; j < width; ++j)
 		{
 			doRender(scene, st, image, i, j);
 		}

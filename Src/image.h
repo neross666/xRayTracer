@@ -82,9 +82,9 @@ public:
 		for (int i = 0; i < height; ++i) {
 			for (int j = 0; j < width; ++j) {
 				auto idx = getIndex(i, j);
-				pixels[idx][0] = std::pow(std::min(pixels[idx][0], 1.0f), 1.0f / gamma);
-				pixels[idx][1] = std::pow(std::min(pixels[idx][1], 1.0f), 1.0f / gamma);
-				pixels[idx][2] = std::pow(std::min(pixels[idx][2], 1.0f), 1.0f / gamma);
+				pixels[idx][0] = std::pow(pixels[idx][0], 1.0f / gamma);
+				pixels[idx][1] = std::pow(pixels[idx][1], 1.0f / gamma);
+				pixels[idx][2] = std::pow(pixels[idx][2], 1.0f / gamma);
 			}
 		}
 	}
@@ -121,11 +121,11 @@ public:
 			for (int j = 0; j < width; ++j) {
 				const Vec3f rgb = getPixel(i, j);
 				const uint8_t R =
-					std::clamp(static_cast<uint8_t>(255.0f * rgb[0]), (uint8_t)0, (uint8_t)255);
+					std::clamp(static_cast<uint32_t>(255.0f * rgb[0]), 0u, 255u);
 				const uint8_t G =
-					std::clamp(static_cast<uint8_t>(255.0f * rgb[1]), (uint8_t)0, (uint8_t)255);
+					std::clamp(static_cast<uint32_t>(255.0f * rgb[1]), 0u, 255u);
 				const uint8_t B =
-					std::clamp(static_cast<uint8_t>(255.0f * rgb[2]), (uint8_t)0, (uint8_t)255);
+					std::clamp(static_cast<uint32_t>(255.0f * rgb[2]), 0u, 255u);
 
 				prow[3 * j] = B;
 				prow[3 * j + 1] = G;

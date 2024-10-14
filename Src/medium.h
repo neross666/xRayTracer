@@ -86,20 +86,20 @@ public:
 	// subsurface scattering using anisotropic phase functions and
 	// non-exponential free flights. Tech. Rep. 17-07, Pixar. https://graphics.
 	// pixar. com/library/PathTracedSubsurface, 2017.
-// 	static uint32_t sampleWavelength(const Vec3f& throughput, const Vec3f& albedo,
-// 		Sampler& sampler, Vec3f& pmf)
-// 	{
-// 		// create empirical discrete distribution
-// 		const Vec3f throughput_albedo = throughput * albedo;
-// 		DiscreteEmpiricalDistribution1D distribution(throughput_albedo.getPtr(), 3);
-// 		pmf = Vec3f(distribution.getPDF(0), distribution.getPDF(1),
-// 			distribution.getPDF(2));
-// 
-// 		// sample index of wavelength from empirical discrete distribution
-// 		float _pdf;
-// 		const uint32_t channel = distribution.sample(sampler.getNext1D(), _pdf);
-// 		return channel;
-// 	}
+	static uint32_t sampleWavelength(const Vec3f& throughput, const Vec3f& albedo,
+		Sampler& sampler, Vec3f& pmf)
+	{
+		// create empirical discrete distribution
+		const Vec3f throughput_albedo = throughput * albedo;
+		DiscreteEmpiricalDistribution1D distribution(throughput_albedo.getPtr(), 3);
+		pmf = Vec3f(distribution.getPDF(0), distribution.getPDF(1),
+			distribution.getPDF(2));
+
+		// sample index of wavelength from empirical discrete distribution
+		float _pdf;
+		const uint32_t channel = distribution.sample(sampler.getNext1D(), _pdf);
+		return channel;
+	}
 
 protected:
 	const std::unique_ptr<PhaseFunction> phaseFunction = nullptr;
@@ -122,9 +122,8 @@ public:
 	{
 		// sample wavelength
 		Vec3f pmf_wavelength(1.0f);
-		// 		const uint32_t channel = sampleWavelength(
-		// 			ray.throughput, (sigma_s / sigma_t), sampler, pmf_wavelength);
-		const uint32_t channel = 0;
+		const uint32_t channel = sampleWavelength(
+			ray.throughput, (sigma_s / sigma_t), sampler, pmf_wavelength);
 
 		// sample collision-free distance
 		const float t = -std::log(std::max(1.0f - sampler.getNext1D(), 0.0f)) /
@@ -139,7 +138,7 @@ public:
 			const Vec3f tr = analyticTransmittance(distToSurface, sigma_t);
 			const Vec3f p_surface = tr;
 			const Vec3f pdf = pmf_wavelength * p_surface;
-			throughput = tr /*/ (pdf[0] + pdf[1] + pdf[2])*/;
+			throughput = tr / (pdf[0] + pdf[1] + pdf[2]);
 			return false;
 		}
 
@@ -151,7 +150,7 @@ public:
 		const Vec3f tr = analyticTransmittance(t, sigma_t);
 		const Vec3f pdf_distance = sigma_t * tr;
 		const Vec3f pdf = pmf_wavelength * pdf_distance;
-		throughput = (tr * sigma_s) /*/ (pdf[0] + pdf[1] + pdf[2])*/;
+		throughput = (tr * sigma_s) / (pdf[0] + pdf[1] + pdf[2]);
 
 		return true;
 	}
