@@ -39,6 +39,7 @@ public:
 		if (std::abs(g) < 1e-3) {
 			// when g is small, sample direction uniformly
 			cosTheta = 2 * u[0] - 1.0f;
+			//cosTheta = 1.0f - 2 * u[0];
 		}
 		else {
 			const float sqrTerm = (1 - g * g) / (1 - g + 2 * g * u[0]);
@@ -132,7 +133,7 @@ public:
 		// hit volume boundary, no collision
 		float distToSurface = info.t1 - info.t;
 		if (t > distToSurface - RAY_EPS) {
-			pos = ray(info.t + distToSurface);
+			pos = ray(info.t1 + RAY_EPS);			
 			dir = ray.direction;
 
 			const Vec3f tr = analyticTransmittance(distToSurface, sigma_t);

@@ -38,13 +38,14 @@ class UniformSampler : public Sampler
 {
 private:
 	std::uniform_real_distribution<float> dis;
+	int count = 0;
 
 public:
 	UniformSampler() : dis(0.0f, 1.0f), Sampler() {}
 	UniformSampler(uint32_t seed) : dis(0.0f, 1.0f), Sampler(seed) {}
 	~UniformSampler() = default;
 
-	float getNext1D() override { return dis(gen); }
-	Vec2f getNext2D() override { return Vec2f(dis(gen), dis(gen)); }
+	float getNext1D() override { count++; return dis(gen); }
+	Vec2f getNext2D() override { count += 2; return Vec2f(dis(gen), dis(gen)); }
 };
 

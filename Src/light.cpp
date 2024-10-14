@@ -92,7 +92,8 @@ SphereLight::SphereLight(const Vec3f& center, float raduis, const Matrix44f& l2w
 
 std::unique_ptr<Object> SphereLight::makeObject()
 {
-	return std::make_unique < SphereMesh >(center_, radius_, 5, 5, nullptr, this);
+	//return std::make_unique < SphereMesh >(center_, radius_, 3, 3, nullptr, this);
+	return std::make_unique < Sphere >(center_, radius_, nullptr, this);
 }
 
 Vec3f SphereLight::UniformSampleSphere(const float& r1, const float& r2) const

@@ -32,7 +32,7 @@ void orthonormalBasis(const Vec3f& n, Vec3f& t, Vec3f& b)
 		t = Vec3f(0, -n[2] * inv_len, n[1] * inv_len);
 	}
 	b = cross(n, t);
-#elif 0
+#elif 1
 	if (std::abs(n[1]) < 0.9f) {
 		t = normalize(cross(n, Vec3f(0, 1, 0)));
 	}

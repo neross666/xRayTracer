@@ -417,27 +417,32 @@ public:
 		uint32_t depth = 0;
 		while (depth < m_maxDepth)
 		{
+			/*spdlog::info("ray.origin({},{},{}) direction({},{},{})",
+				ray.origin[0], ray.origin[1], ray.origin[2],
+				ray.direction[0], ray.direction[1], ray.direction[2]);*/
+
 			IntersectInfo info;
 			if (!scene.intersect(ray, info))
 			{
-				radiance += ray.throughput * background;
+				radiance += ray.throughput * background * (depth != 0);
 				break;
 			}
 
 			// russian roulette
-			if (depth > 0) {
-				const float russian_roulette_prob = std::min(
-					(ray.throughput[0] + ray.throughput[1] + ray.throughput[2]) /
-					3.0f,
-					1.0f);
-				if (sampler.getNext1D() >= russian_roulette_prob) { break; }
-				ray.throughput /= russian_roulette_prob;
-			}
+// 			if (depth > 0) {
+// 				const float russian_roulette_prob = std::min(
+// 					(ray.throughput[0] + ray.throughput[1] + ray.throughput[2]) /
+// 					3.0f,
+// 					1.0f);
+// 				if (sampler.getNext1D() >= russian_roulette_prob) { break; }
+// 				ray.throughput /= russian_roulette_prob;
+// 			}
 
 			// Le
 			if (info.hitObject->hasAreaLight()) {
 				radiance += ray.throughput *
 					info.hitObject->Le(info.surfaceInfo, ray.direction);
+				//spdlog::info("hit AreaLight");
 				break;
 			}
 
@@ -451,17 +456,19 @@ public:
 					throughput_medium);
 
 				// advance ray
+				//spdlog::info("is_scattered:{}, cos:{}", is_scattered, dot(dir, ray.direction));
 				ray.origin = pos;
 				ray.direction = dir;
 
 				// update throughput
 				ray.throughput *= throughput_medium;
 
-				depth++;
+				if (!is_scattered)	
+					depth++;
 			}
 		}
 
-
+		//spdlog::info("--------");
 		return radiance;
 	}
 
