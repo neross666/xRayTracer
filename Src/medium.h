@@ -105,7 +105,7 @@ protected:
 	const std::unique_ptr<PhaseFunction> phaseFunction = nullptr;
 };
 
-// with spectral MIS
+
 class HomogeneousMedium : public Medium
 {
 public:
@@ -116,6 +116,20 @@ public:
 	std::unique_ptr<Object> makeObject() override {
 		return std::make_unique< BoxMesh >(box, this);
 	}
+
+protected:
+	const Vec3f sigma_a;	// absorption coefficient
+	const Vec3f sigma_s;	// scattering coefficient
+	const Vec3f sigma_t;	// extinction coefficient
+	const AABB box;			// bounding box
+};
+
+// with spectral MIS
+class HomogeneousMediumMIS : public HomogeneousMedium
+{
+public:
+	HomogeneousMediumMIS(float g, Vec3f a, Vec3f s, AABB box) : HomogeneousMedium(g,a,s,box) {}
+	~HomogeneousMediumMIS() = default;
 
 	bool sampleMedium(const Ray& ray, IntersectInfo info,
 		Sampler& sampler, Vec3f& pos, Vec3f& dir,
@@ -155,25 +169,14 @@ public:
 
 		return true;
 	}
-
-private:
-	const Vec3f sigma_a;	// absorption coefficient
-	const Vec3f sigma_s;	// scattering coefficient
-	const Vec3f sigma_t;	// extinction coefficient
-	const AABB box;			// bounding box
 };
 
 // achromatic version
-class HomogeneousMediumAchromatic : public Medium
+class HomogeneousMediumAchromatic : public HomogeneousMedium
 {
 public:
-	HomogeneousMediumAchromatic(float g, float a, float s, AABB box) : Medium(g),
-		sigma_a(a), sigma_s(s), sigma_t(a + s), box(box) {}
+	HomogeneousMediumAchromatic(float g, float a, float s, AABB box) : HomogeneousMedium(g,Vec3f(a),Vec3f(s),box){}
 	~HomogeneousMediumAchromatic() = default;
-
-	std::unique_ptr<Object> makeObject() override {
-		return std::make_unique< BoxMesh >(box, this);
-	}
 
 	bool sampleMedium(const Ray& ray, IntersectInfo info,
 		Sampler& sampler, Vec3f& pos, Vec3f& dir,
@@ -182,7 +185,7 @@ public:
 
 		// sample collision-free distance
 		const float t = -std::log(std::max(1.0f - sampler.getNext1D(), 0.0f)) /
-			sigma_t;
+			sigma_t[0];
 
 		// hit volume boundary, no collision
 		float distToSurface = info.t1 - info.t;
@@ -203,25 +206,14 @@ public:
 
 		return true;
 	}
-
-private:
-	const float sigma_a;	// absorption coefficient
-	const float sigma_s;	// scattering coefficient
-	const float sigma_t;	// extinction coefficient
-	const AABB box;			// bounding box
 };
 
 // no spectral MIS version
-class HomogeneousMediumNoMIS : public Medium
+class HomogeneousMediumNoMIS : public HomogeneousMedium
 {
 public:
-	HomogeneousMediumNoMIS(float g, Vec3f a, Vec3f s, AABB box) : Medium(g),
-		sigma_a(a), sigma_s(s), sigma_t(a + s), box(box) {}
+	HomogeneousMediumNoMIS(float g, Vec3f a, Vec3f s, AABB box) : HomogeneousMedium(g,a,s,box){}
 	~HomogeneousMediumNoMIS() = default;
-
-	std::unique_ptr<Object> makeObject() override {
-		return std::make_unique< BoxMesh >(box, this);
-	}
 
 	bool sampleMedium(const Ray& ray, IntersectInfo info,
 		Sampler& sampler, Vec3f& pos, Vec3f& dir,
@@ -260,10 +252,4 @@ public:
 
 		return true;
 	}
-
-private:
-	const Vec3f sigma_a;	// absorption coefficient
-	const Vec3f sigma_s;	// scattering coefficient
-	const Vec3f sigma_t;	// extinction coefficient
-	const AABB box;			// bounding box
 };

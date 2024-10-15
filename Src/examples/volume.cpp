@@ -40,7 +40,7 @@ int main(int argc, char** argv)
 	// build scene
 	Scene scene;
 
-	const auto medium = std::make_unique<HomogeneousMediumAchromatic>(0.0f, 0.5f, 0.5f, AABB{ Vec3f(-1.0f), Vec3f(1.0f) });
+	const auto medium = std::make_unique<HomogeneousMediumMIS>(0.0f, Vec3f(0.5f), Vec3f(0.5f), AABB{ Vec3f(-1.0f), Vec3f(1.0f) });
 	scene.addObj("medium", medium->makeObject());
 
 	Matrix44<float> xfm_sphere(
