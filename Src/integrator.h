@@ -463,7 +463,7 @@ public:
 				// update throughput
 				ray.throughput *= throughput_medium;
 
-				if (!is_scattered)	
+				if (!is_scattered)
 					depth++;
 			}
 		}

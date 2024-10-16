@@ -12,6 +12,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(spdlog REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(OpenVDB REQUIRED)
 
 
 # 
@@ -41,6 +42,7 @@ SET(Sources
 	"scene.cpp"
 	"renderer.cpp"
 	"sampler.cpp"
+	"medium.cpp"
 	)
 
 add_library(xRayTracer STATIC 
@@ -67,6 +69,7 @@ target_link_libraries(xRayTracer
 PUBLIC 
 	spdlog::spdlog
 	${OpenCV_LIBS}
+	OpenVDB::openvdb
 	)
 
 add_subdirectory(examples)

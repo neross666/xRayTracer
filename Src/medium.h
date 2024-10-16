@@ -1,4 +1,8 @@
 ﻿#pragma once
+#include "geometry.h"
+#include "sampler.h"
+#include "primitive.h"
+
 
 class PhaseFunction
 {
@@ -128,7 +132,7 @@ protected:
 class HomogeneousMediumMIS : public HomogeneousMedium
 {
 public:
-	HomogeneousMediumMIS(float g, Vec3f a, Vec3f s, AABB box) : HomogeneousMedium(g,a,s,box) {}
+	HomogeneousMediumMIS(float g, Vec3f a, Vec3f s, AABB box) : HomogeneousMedium(g, a, s, box) {}
 	~HomogeneousMediumMIS() = default;
 
 	bool sampleMedium(const Ray& ray, IntersectInfo info,
@@ -147,7 +151,7 @@ public:
 		// hit volume boundary, no collision
 		float distToSurface = info.t1 - info.t;
 		if (t > distToSurface - RAY_EPS) {
-			pos = ray(info.t1 + RAY_EPS);			
+			pos = ray(info.t1 + RAY_EPS);
 			dir = ray.direction;
 
 			const Vec3f tr = analyticTransmittance(distToSurface, sigma_t);
@@ -175,7 +179,7 @@ public:
 class HomogeneousMediumAchromatic : public HomogeneousMedium
 {
 public:
-	HomogeneousMediumAchromatic(float g, float a, float s, AABB box) : HomogeneousMedium(g,Vec3f(a),Vec3f(s),box){}
+	HomogeneousMediumAchromatic(float g, float a, float s, AABB box) : HomogeneousMedium(g, Vec3f(a), Vec3f(s), box) {}
 	~HomogeneousMediumAchromatic() = default;
 
 	bool sampleMedium(const Ray& ray, IntersectInfo info,
@@ -212,7 +216,7 @@ public:
 class HomogeneousMediumNoMIS : public HomogeneousMedium
 {
 public:
-	HomogeneousMediumNoMIS(float g, Vec3f a, Vec3f s, AABB box) : HomogeneousMedium(g,a,s,box){}
+	HomogeneousMediumNoMIS(float g, Vec3f a, Vec3f s, AABB box) : HomogeneousMedium(g, a, s, box) {}
 	~HomogeneousMediumNoMIS() = default;
 
 	bool sampleMedium(const Ray& ray, IntersectInfo info,
@@ -252,4 +256,40 @@ public:
 
 		return true;
 	}
+};
+
+class DensityGrid;
+class HeterogeneousMedium : public Medium
+{
+private:
+	const DensityGrid* densityGridPtr;
+	const Vec3f absorptionColor;
+	const Vec3f scatteringColor;
+	const float densityMultiplier;
+
+	float majorant;
+	float invMajorant;
+
+	float getDensity(const Vec3f& p) const;
+
+	float getMaxDensity() const;
+
+	Vec3f getSigma_a(float density) const;
+
+	Vec3f getSigma_s(float density) const;
+
+public:
+	HeterogeneousMedium(float g, const DensityGrid* densityGridPtr,
+		const Vec3f& absorptionColor,
+		const Vec3f& scatteringColor,
+		float densityMultiplier = 1.0f);
+
+
+	std::unique_ptr<Object> makeObject() override;
+
+	// delta tracking
+	// ignore emission
+	bool sampleMedium(const Ray& ray, IntersectInfo info,
+		Sampler& sampler, Vec3f& pos, Vec3f& dir,
+		Vec3f& throughput) const override;
 };
