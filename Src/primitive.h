@@ -83,6 +83,11 @@ public:
 		Sampler& sampler, Vec3f& pos, Vec3f& dir,
 		Vec3f& throughput) const;
 
+	Vec3f sampleTransparency(const Vec3f& p1, const Vec3f& p2,
+		Sampler& sampler) const;
+
+	Vec3f evalPhaseFunction(const Vec3f& wo, const Vec3f& wi) const;
+
 protected:
 	Material* m_material = nullptr;
 	AreaLight* m_areaLight = nullptr;

@@ -47,6 +47,13 @@ public:
 			return;
 		}
 		file.close();
+
+		AABB bbox = getBounds();
+		spdlog::info("[Scene] OpenVDB Volume bounding box");
+		spdlog::info("[Scene] pMin: ({}, {}, {})", bbox.pMin[0], bbox.pMin[1],
+			bbox.pMin[2]);
+		spdlog::info("[Scene] pMax: ({}, {}, {})", bbox.pMax[0], bbox.pMax[1],
+			bbox.pMax[2]);
 	}
 
 	AABB getBounds() const override

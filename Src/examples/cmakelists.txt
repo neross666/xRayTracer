@@ -22,5 +22,12 @@ add_executable(example
 add_executable(volume
   "volume.cpp")
   
-add_executable(vpt
+add_executable(VPT
   "vpt.cpp")
+
+  
+add_executable(VolumeRayMarch
+  "vrm.cpp")
+
+ add_executable(NEE
+  "nee.cpp")

@@ -57,15 +57,13 @@ public:
 	AreaLight(const Matrix44f& l2w, const Vec3f& Le) : lightToWorld(l2w), Le_(Le) {
 	}
 
-	virtual Vec3f sample(const IntersectInfo& info, Vec3<float>& wi, float& pdf, float& t_max, Sampler& sample) const = 0;
+	virtual Vec3f sample(const Vec3f& pos, Vec3<float>& wi, float& pdf, float& t_max, Sampler& sample) const = 0;
 
-	virtual Vec3f Le(const SurfaceInfo& info, const Vec3f& wi) const {
-		//return Le_; 
-		if (dot(wi, info.ns) < 0) {
+	virtual Vec3f Le(const Vec3f& ns, const Vec3f& wi) const {
+		if (dot(wi, ns) < 0) {
 			return Le_;
-		}
-		// backface
-		else {
+		}		
+		else {	// backface
 			return Vec3f(0);
 		}
 	}
@@ -84,7 +82,7 @@ public:
 	TriangleLight(const Primitive& primitive, const Vec3f& Le);
 	TriangleLight(const Vec3f& v0, const Vec3f& v1, const Vec3f& v2, const Matrix44f& l2w, const Vec3f& Le);
 
-	Vec3f sample(const IntersectInfo& info, Vec3<float>& wi, float& pdf, float& tmax, Sampler& sample) const override;
+	Vec3f sample(const Vec3f& position, Vec3<float>& wi, float& pdf, float& tmax, Sampler& sample) const override;
 
 	virtual std::unique_ptr<Object> makeObject() override;
 
@@ -108,7 +106,7 @@ class QuadLight : public AreaLight
 public:
 	QuadLight(const Vec3f& v0, const Vec3f& v1, const Vec3f& v2, const Matrix44f& l2w, const Vec3f& Le);
 
-	Vec3f sample(const IntersectInfo& info, Vec3<float>& wi, float& pdf, float& tmax, Sampler& sample) const override;
+	Vec3f sample(const Vec3f& position, Vec3<float>& wi, float& pdf, float& tmax, Sampler& sample) const override;
 
 	virtual std::unique_ptr<Object> makeObject() override;
 private:
@@ -128,15 +126,15 @@ class SphereLight : public AreaLight
 public:
 	SphereLight(const Vec3f& center, float raduis, const Matrix44f& l2w, const Vec3f& Le);
 
-	Vec3f sample(const IntersectInfo& info, Vec3<float>& wi, float& pdf, float& tmax, Sampler& sample) const override
+	Vec3f sample(const Vec3f& position, Vec3<float>& wi, float& pdf, float& tmax, Sampler& sample) const override
 	{
 #ifdef AREA_SAMPLING
 		Vec3f n = UniformSampleSphere(sample.getNext1D(), sample.getNext1D());
 		Vec3f p = center_ + n * radius_;
-		Vec3f d = p - info.surfaceInfo.position;
+		Vec3f d = p - position;
 		tmax = length(d);
 #elif defined(INTERSECT_METHOD)
-		Vec3f dz = center_ - info.surfaceInfo.position;
+		Vec3f dz = center_ - position;
 		float dz_len_2 = dot(dz, dz);
 		float dz_len = std::sqrtf(dz_len_2);
 		dz /= dz_len;
@@ -149,15 +147,15 @@ public:
 		Vec3f sample_dir = UniformSampleCone(sample.getNext1D(), sample.getNext1D(), cos_theta_max, dx, dy, dz);
 
 		IntersectInfo sinfo;
-		if (!lightObject->intersect(Ray(info.surfaceInfo.position, sample_dir), sinfo)) {
-			tmax = dot(center_ - info.surfaceInfo.position, sample_dir);
+		if (!lightObject->intersect(Ray(position, sample_dir), sinfo)) {
+			tmax = dot(center_ - position, sample_dir);
 		}
-		Vec3f p = info.surfaceInfo.position + sample_dir * tmax;
-		Vec3f d = p - info.surfaceInfo.position;
+		Vec3f p = position + sample_dir * tmax;
+		Vec3f d = p - position;
 		if (length(p - center_) < radius_)  return Vec3f(0.0f); // check for x inside the sphere
 		Vec3f n = normalize(p - center_);
 #else
-		Vec3f dz = center_ - info.surfaceInfo.position;
+		Vec3f dz = center_ - position;
 		float dz_len_2 = dot(dz, dz);
 		float dz_len = std::sqrtf(dz_len_2);
 		dz /= -dz_len;
@@ -179,7 +177,7 @@ public:
 		Vec3f n = std::cos(phi) * sin_alpha * dx + std::sin(phi) * sin_alpha * dy + cos_alpha * dz;
 		Vec3f p = center_ + n * radius_;
 
-		Vec3f d = p - info.surfaceInfo.position;
+		Vec3f d = p - position;
 		tmax = length(d);
 #endif
 

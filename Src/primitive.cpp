@@ -56,7 +56,7 @@ Vec3f Object::Le(const SurfaceInfo& info, const Vec3f& wi) const
 	if (m_areaLight == nullptr)
 		return Vec3f(0.0f);
 
-	return m_areaLight->Le(info, wi);
+	return m_areaLight->Le(info.ns, wi);
 }
 
 bool Object::sampleMedium(const Ray& ray, IntersectInfo info, Sampler& sampler, Vec3f& pos, Vec3f& dir, Vec3f& throughput) const
@@ -64,6 +64,20 @@ bool Object::sampleMedium(const Ray& ray, IntersectInfo info, Sampler& sampler, 
 	if (m_medium == nullptr)
 		return false;
 	return m_medium->sampleMedium(ray, info, sampler, pos, dir, throughput);
+}
+
+Vec3f Object::sampleTransparency(const Vec3f& p1, const Vec3f& p2, Sampler& sampler) const
+{
+	if (m_medium == nullptr)
+		return Vec3f(0.0f);
+	return m_medium->transmittance(p1, p2, sampler);
+}
+
+Vec3f Object::evalPhaseFunction(const Vec3f& wo, const Vec3f& wi) const
+{
+	if (m_medium == nullptr)
+		return Vec3f(0.0f);
+	return m_medium->evalPhaseFunction(wo, wi);
 }
 
 bool Mesh::intersect(const Ray& ray, IntersectInfo& info) const

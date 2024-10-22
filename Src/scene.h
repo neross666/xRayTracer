@@ -9,10 +9,10 @@ class Object;
 class Material;
 class DeltaLight;
 class AreaLight;
+class Sampler;
 class Scene
 {
 public:
-	Scene() = default;
 	~Scene() = default;
 
 	void loadObj(const std::filesystem::path& filepath);
@@ -30,6 +30,8 @@ public:
 	const std::vector<std::unique_ptr<DeltaLight>>& getDeltaLights() const;
 
 	const std::vector<std::unique_ptr<AreaLight>>& getAreaLights() const;
+
+	const AreaLight* sampleAreaLight(Sampler& sampler, float& pdf) const;
 
 	bool intersect(const Ray& ray, IntersectInfo& info) const;
 

@@ -18,9 +18,9 @@ TriangleLight::TriangleLight(const Primitive& primitive, const Vec3f& Le) : Area
 	std::vector<Primitive> primitives{ primitive };
 }
 
-Vec3f TriangleLight::sample(const IntersectInfo& info, Vec3<float>& wi, float& pdf, float& tmax, Sampler& sample) const
+Vec3f TriangleLight::sample(const Vec3f& position, Vec3<float>& wi, float& pdf, float& tmax, Sampler& sample) const
 {
-	Vec3f d = uniformSampleTriangle(sample.getNext1D(), sample.getNext1D(), v0_, v1_, v2_) - info.surfaceInfo.position;
+	Vec3f d = uniformSampleTriangle(sample.getNext1D(), sample.getNext1D(), v0_, v1_, v2_) - position;
 	tmax = length(d);
 	float d_dot_Ng = dot(d, Ng_);
 	if (d_dot_Ng >= 0) return 0;
@@ -56,9 +56,9 @@ QuadLight::QuadLight(const Vec3f& v0, const Vec3f& v1, const Vec3f& v2, const Ma
 {
 }
 
-Vec3f QuadLight::sample(const IntersectInfo& info, Vec3<float>& wi, float& pdf, float& tmax, Sampler& sample) const
+Vec3f QuadLight::sample(const Vec3f& position, Vec3<float>& wi, float& pdf, float& tmax, Sampler& sample) const
 {
-	Vec3f d = (v0_ + e1_ * sample.getNext1D() + e2_ * sample.getNext1D()) - info.surfaceInfo.position;
+	Vec3f d = (v0_ + e1_ * sample.getNext1D() + e2_ * sample.getNext1D()) - position;
 	tmax = length(d);
 	float d_dot_Ng = dot(d, Ng_);
 	if (d_dot_Ng >= 0) return 0;

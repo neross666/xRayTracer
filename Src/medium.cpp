@@ -67,12 +67,12 @@ bool HeterogeneousMedium::sampleMedium(const Ray& ray, IntersectInfo info, Sampl
 
 		// hit volume boundary, no collision
 		float distToSurface = info.t1 - info.t;
-		if (t > distToSurface - RAY_EPS) {
-			pos = ray(distToSurface + RAY_EPS);
+		if (t > info.t1 - RAY_EPS) {
+			pos = ray(info.t1 + RAY_EPS);
 			dir = ray.direction;
 
 			const float dist_to_surface_from_current_pos =
-				s - (t - (distToSurface - RAY_EPS));
+				s - (t - (info.t1 - RAY_EPS));
 			const Vec3f tr = analyticTransmittance(dist_to_surface_from_current_pos,
 				Vec3f(majorant));
 			const Vec3f p_surface = tr;

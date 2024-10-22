@@ -17,6 +17,7 @@ public:
 };
 
 // https://pbr-book.org/3ed-2018/Volume_Scattering/Phase_Functions#PhaseHG
+// human skin:g∈[0.85,0.91]
 class HenyeyGreenstein : public PhaseFunction
 {
 private:
@@ -80,6 +81,14 @@ public:
 		Sampler& sampler, Vec3f& pos, Vec3f& dir,
 		Vec3f& throughput) const = 0;
 
+	virtual Vec3f transmittance(const Vec3f& p1, const Vec3f& p2,
+		Sampler& sampler) const = 0;
+
+	Vec3f evalPhaseFunction(const Vec3f& wo, const Vec3f& wi) const
+	{
+		return phaseFunction->evaluate(wo, wi);
+	}
+
 	static Vec3f analyticTransmittance(float t, const Vec3f& sigma)
 	{
 		return exp(-sigma * t);
@@ -119,6 +128,13 @@ public:
 
 	std::unique_ptr<Object> makeObject() override {
 		return std::make_unique< BoxMesh >(box, this);
+	}
+
+	Vec3f transmittance(const Vec3f& p1, const Vec3f& p2,
+		Sampler& sampler) const override
+	{
+		const float t = length(p1 - p2);
+		return analyticTransmittance(t, sigma_t);
 	}
 
 protected:
@@ -292,4 +308,78 @@ public:
 	bool sampleMedium(const Ray& ray, IntersectInfo info,
 		Sampler& sampler, Vec3f& pos, Vec3f& dir,
 		Vec3f& throughput) const override;
+
+	Vec3f transmittance(const Vec3f& p1, const Vec3f& p2,
+		Sampler& sampler) const override
+	{
+		return ratioTrackingTransmittance(p1, p2, sampler);
+	}
+
+private:
+	Vec3f deltaTrackingTransmittance(const Vec3f& p1, const Vec3f& p2,
+		Sampler& sampler) const
+	{
+		const float distToEnd = length(p1 - p2);
+
+		// sample wavelength
+		Vec3f pmf_wavelength;
+		const uint32_t channel =
+			sampleWavelength(Vec3f(1), Vec3f(1), sampler, pmf_wavelength);
+
+		// loop until collision occurs or exit medium
+		float t = 0;
+		Ray ray(p1, normalize(p2 - p1));
+		Vec3f transmittance(1);
+		while (true) {
+			// sample collision-free distance
+			const float s =
+				-std::log(std::max(1.0f - sampler.getNext1D(), 0.0f)) * invMajorant;
+			t += s;
+
+			// no collision
+			if (t > distToEnd) { return transmittance; }
+
+			// compute russian roulette probability
+			const float density = getDensity(ray(t));
+			const Vec3f sigma_a = getSigma_a(density);
+			const Vec3f sigma_s = getSigma_s(density);
+			const Vec3f sigma_n = Vec3f(majorant) - sigma_a - sigma_s;
+			const Vec3f P_n = sigma_n * invMajorant;
+
+			// collision
+			if (sampler.getNext1D() > P_n[channel]) { return Vec3f(0); }
+
+			transmittance *= (sigma_n / sigma_n[channel]);
+		}
+
+		return transmittance;
+	}
+
+	Vec3f ratioTrackingTransmittance(const Vec3f& p1, const Vec3f& p2,
+		Sampler& sampler) const
+	{
+		const float distToEnd = length(p1 - p2);
+
+		// loop until collision occurs or exit medium
+		float t = 0;
+		Ray ray(p1, normalize(p2 - p1));
+		Vec3f transmittance(1);
+		while (true) {
+			// sample collision-free distance
+			const float s =
+				-std::log(std::max(1.0f - sampler.getNext1D(), 0.0f)) * invMajorant;
+			t += s;
+
+			// no collision
+			if (t > distToEnd) { break; }
+
+			// ratio tracking
+			const float density = getDensity(ray(t));
+			const Vec3f sigma_n =
+				Vec3f(majorant) - getSigma_a(density) - getSigma_s(density);
+			transmittance *= (sigma_n * invMajorant);
+		}
+
+		return transmittance;
+	}
 };

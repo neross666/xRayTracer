@@ -42,7 +42,7 @@ public:
 		float FOV = 90.0f)
 		: Camera(aspect_ratio_, c2w)
 	{
-		scale = std::tan(FOV * 0.5f * PI / 180.f);
+		scale = std::tan(0.5f * deg2rad(FOV));
 		spdlog::info("[PinholeCamera] scale: {}", scale);
 	}
 

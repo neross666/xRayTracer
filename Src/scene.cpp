@@ -2,6 +2,7 @@
 #include "material.h"
 #include "light.h"
 #include "primitive.h"
+#include "sampler.h"
 #include <tiny_obj_loader.h>
 
 
@@ -176,6 +177,14 @@ const std::vector<std::unique_ptr<DeltaLight>>& Scene::getDeltaLights() const
 const std::vector<std::unique_ptr<AreaLight>>& Scene::getAreaLights() const
 {
 	return m_areaLights;
+}
+
+const AreaLight* Scene::sampleAreaLight(Sampler& sampler, float& pdf) const
+{
+	unsigned int lightIdx = m_areaLights.size() * sampler.getNext1D();
+	if (lightIdx == m_areaLights.size()) lightIdx--;
+	pdf = 1.0f / m_areaLights.size();
+	return m_areaLights[lightIdx].get();
 }
 
 bool Scene::intersect(const Ray& ray, IntersectInfo& info) const
