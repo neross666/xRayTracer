@@ -59,13 +59,13 @@ int main(int argc, char** argv)
 		0, 1, 0, 0,
 		0, 0, 1, 0,
 		0, 400.0, 0.0, 1);
-	//scene.addAreaLight("SphereLight", std::make_unique<SphereLight>(Vec3f(0.0f), 50.0f, xfm_sphere, Vec3f(20.0f, 20.0f, 20.0f)));
+	scene.addAreaLight("SphereLight", std::make_unique<SphereLight>(Vec3f(0.0f), 50.0f, xfm_sphere, Vec3f(20.0f, 20.0f, 20.0f)));
 
-	scene.addAreaLight("QuadLight", std::make_unique<QuadLight>(
-		Vec3f(100, 350, 100),
-		Vec3f(-100, 350, 100),
-		Vec3f(100, 350, -100),
-		Matrix44f(), 20.0f * Vec3f(1.0, 1.0, 1.0)));
+// 	scene.addAreaLight("QuadLight", std::make_unique<QuadLight>(
+// 		Vec3f(100, 350, 100),
+// 		Vec3f(-100, 350, 100),
+// 		Vec3f(100, 350, -100),
+// 		Matrix44f(), 20.0f * Vec3f(1.0, 1.0, 1.0)));
 
 
 	// integrator

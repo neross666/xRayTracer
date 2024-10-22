@@ -120,13 +120,13 @@ private:
 	Vec3f Ng_;
 };
 
-
+#include <spdlog/spdlog.h>
 class SphereLight : public AreaLight
 {
 public:
 	SphereLight(const Vec3f& center, float raduis, const Matrix44f& l2w, const Vec3f& Le);
 
-	Vec3f sample(const Vec3f& position, Vec3<float>& wi, float& pdf, float& tmax, Sampler& sample) const override
+	Vec3f sample(const Vec3f& position, Vec3f& wi, float& pdf, float& tmax, Sampler& sample) const override
 	{
 #ifdef AREA_SAMPLING
 		Vec3f n = UniformSampleSphere(sample.getNext1D(), sample.getNext1D());
@@ -170,8 +170,8 @@ public:
 		float cos_theta = 1 + (cos_theta_max - 1) * sample.getNext1D();
 		float sin_theta_2 = 1.f - cos_theta * cos_theta;
 
-		float cos_alpha = sin_theta_2 / sin_theta_max + cos_theta * std::sqrt(1 - sin_theta_2 / (sin_theta_max * sin_theta_max));
-		float sin_alpha = std::sqrt(1 - cos_alpha * cos_alpha);
+		float cos_alpha = sin_theta_2 / sin_theta_max + cos_theta * std::sqrt(std::max(0.0f, 1 - sin_theta_2 / sin_theta_max_2));
+		float sin_alpha = std::sqrt(std::max(0.0f, 1 - cos_alpha * cos_alpha));
 		float phi = 2 * PI * sample.getNext1D();
 
 		Vec3f n = std::cos(phi) * sin_alpha * dx + std::sin(phi) * sin_alpha * dy + cos_alpha * dz;
@@ -179,10 +179,12 @@ public:
 
 		Vec3f d = p - position;
 		tmax = length(d);
+
 #endif
 
 		float d_dot_n = dot(d, n);
-		if (d_dot_n >= 0) return 0;
+		if (d_dot_n >= 0) 
+			return Vec3f(0.0f);
 
 #if AREA_SAMPLING
 		wi = d / tmax;
@@ -191,6 +193,7 @@ public:
 		pdf = 1.f / (2.f * PI * (1.f - cos_theta_max));
 		wi = d / tmax;
 #endif
+
 		return Le_;
 	}
 

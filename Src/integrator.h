@@ -541,24 +541,27 @@ public:
 					float dist_to_light;
 					float pdf_dir;
 					const Vec3f Le = sampleDirectionToLight(scene, pos, sampler, dir_to_light,
-						dist_to_light, pdf_dir);
+						dist_to_light, pdf_dir);							
 
- 					Vec3f transmittance;
-					if (isVisible(scene, pos, dir_to_light, sampler, transmittance)) 
+					if (pdf_dir > 0.0f)
 					{
-						// add contribution
-						const Vec3f f = info.hitObject->evalPhaseFunction(ray.direction, dir_to_light);
-						const Vec3f Ls = transmittance * f * Le / pdf_dir;
-						// if (length(Ls) > 1.0f) {
-						//   spdlog::info("firefly");
-						//   spdlog::info("Ls: ({}, {}, {})", Ls[0], Ls[1], Ls[2]);
-						//   spdlog::info("transmittance: ({}, {}, {})", transmittance[0],
-						//                transmittance[1], transmittance[2]);
-						//   spdlog::info("f: ({}, {}, {})", f[0], f[1], f[2]);
-						//   spdlog::info("pdf_dir: {}", pdf_dir);
-						// }
-						radiance += ray.throughput * throughput_medium * Ls;
-					}
+						Vec3f transmittance;
+						if (isVisible(scene, pos, dir_to_light, sampler, transmittance))
+						{
+							// add contribution
+							const Vec3f f = info.hitObject->evalPhaseFunction(ray.direction, dir_to_light);
+							const Vec3f Ls = transmittance * f * Le / pdf_dir;
+							// if (length(Ls) > 1.0f) {
+							//   spdlog::info("firefly");
+							//   spdlog::info("Ls: ({}, {}, {})", Ls[0], Ls[1], Ls[2]);
+							//   spdlog::info("transmittance: ({}, {}, {})", transmittance[0],
+							//                transmittance[1], transmittance[2]);
+							//   spdlog::info("f: ({}, {}, {})", f[0], f[1], f[2]);
+							//   spdlog::info("pdf_dir: {}", pdf_dir);
+							// }
+							radiance += ray.throughput * throughput_medium * Ls;
+						}
+					} 					
 				}
 
 
@@ -591,7 +594,7 @@ private:
 		// sample point on light
 		float light_pos_pdf = 0.0f;
 		Vec3f L = light->sample(pos, dir, light_pos_pdf, dist_to_light, sampler);  // light-->medium
-
+		
  		// convert point pdf to directional pdf
  		pdf = light_choose_prob * light_pos_pdf;
 
