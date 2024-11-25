@@ -24,7 +24,7 @@
 	- GIIntegrator：直接+间接光照积分器
 	- WhittedIntegrator：Whitted风格积分器
 	- VolumePathTracing：体渲染积分器
-- 结果图像存储于显示
+- 结果图像存储与显示
 
 ## 部分效果图
 ![c82ee24afb0070a70fbd047e75efc32](https://github.com/user-attachments/assets/e57f970b-5423-402a-b245-bdb5512a45b6)
