@@ -1,4 +1,4 @@
-#include "camera.h"
+﻿#include "camera.h"
 #include "image.h"
 #include "integrator.h"
 #include "material.h"
@@ -27,10 +27,10 @@ int main(int argc, char** argv)
 #endif
 
 
-	const uint32_t width = 512;
-	const uint32_t height = 512;
-	const uint32_t n_samples = 32;
-	const uint32_t max_depth = 10;
+	const uint32_t width = 780;
+	const uint32_t height = 585;
+	const uint32_t n_samples = 1024;
+	const uint32_t max_depth = 32;
 
 
 	Image image(width, height);
@@ -42,7 +42,7 @@ int main(int argc, char** argv)
 		0.0, 1.0, 0.0, 0.0,
 		0.0, 0.0, 1.0, 0.0,
 		0.0, 70.0, 550.0, 1.0);
-	const float FOV = 75.0f;
+	const float FOV = 60.0f;
 	const auto camera =
 		std::make_unique<PinholeCamera>(aspect_ratio, c2w, FOV);
 
@@ -50,8 +50,8 @@ int main(int argc, char** argv)
 	// build scene
 	Scene scene;
 	std::string dataDir = DATA_DIR;
-	auto gridData = std::make_unique<OpenVDBGrid>(dataDir + "wdas_cloud_sixteenth.vdb");
-	const auto medium = std::make_unique<HeterogeneousMedium>(0.0f, gridData.get(), Vec3f(0.1f), Vec3f(0.8f));
+	auto gridData = std::make_unique<OpenVDBGrid>(dataDir + "wdas_cloud_quarter.vdb");
+	const auto medium = std::make_unique<HeterogeneousMedium>(0.0f, gridData.get(), Vec3f(0.01f), Vec3f(0.05f));
 	scene.addObj("medium", medium->makeObject());
 
 	Matrix44<float> xfm_sphere(
@@ -59,17 +59,17 @@ int main(int argc, char** argv)
 		0, 1, 0, 0,
 		0, 0, 1, 0,
 		0, 400.0, 0.0, 1);
-	scene.addAreaLight("SphereLight", std::make_unique<SphereLight>(Vec3f(0.0f), 50.0f, xfm_sphere, Vec3f(20.0f, 20.0f, 20.0f)));
+	scene.addAreaLight("SphereLight", std::make_unique<SphereLight>(Vec3f(0.0f), 50.0f, xfm_sphere, Vec3f(30.0f, 30.0f, 30.0f)));
 
-// 	scene.addAreaLight("QuadLight", std::make_unique<QuadLight>(
-// 		Vec3f(100, 350, 100),
-// 		Vec3f(-100, 350, 100),
-// 		Vec3f(100, 350, -100),
-// 		Matrix44f(), 20.0f * Vec3f(1.0, 1.0, 1.0)));
+	// 	scene.addAreaLight("QuadLight", std::make_unique<QuadLight>(
+	// 		Vec3f(100, 350, 100),
+	// 		Vec3f(-100, 350, 100),
+	// 		Vec3f(100, 350, -100),
+	// 		Matrix44f(), 20.0f * Vec3f(1.0, 1.0, 1.0)));
 
 
-	// integrator
-	//const auto integrator = std::make_unique<NormalIntegrator>();
+		// integrator
+		//const auto integrator = std::make_unique<NormalIntegrator>();
 	const auto integrator = std::make_unique<VolumePathTracingNEE>(max_depth);
 
 

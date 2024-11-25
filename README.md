@@ -22,5 +22,12 @@
 	- IndirectIntegrator：间接光照积分器
 	- GIIntegrator：直接+间接光照积分器
 	- WhittedIntegrator：Whitted风格积分器
-	- VolumePathTracing：体渲染积分器[未完成]
-- 结果图像存储于显示[需要用到OpenCV]
+	- VolumePathTracing：体渲染积分器
+	- VolumePathTracingNEE：体渲染积分器
+- 结果图像存储于显示
+
+
+# Reqiure
+spdlog
+OpenCV
+OpenVDB

@@ -12,8 +12,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(spdlog REQUIRED)
 find_package(OpenCV REQUIRED)
-find_package(OpenVDB REQUIRED)
-
+find_package(OpenVDB CONFIG REQUIRED)
 
 # 
 SET(Headers 
@@ -73,5 +72,3 @@ PUBLIC
 	)
 
 add_subdirectory(examples)
-
-

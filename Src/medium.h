@@ -217,7 +217,9 @@ public:
 			return false;
 		}
 
-		// in-scattering
+		// ignore emit event
+
+		// in-scattering event
 		// sample direction
 		phaseFunction->sampleDirection(ray.direction, sampler, dir);
 

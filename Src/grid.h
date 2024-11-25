@@ -6,7 +6,6 @@
 #include <spdlog/spdlog.h>
 
 
-
 class DensityGrid
 {
 public:

@@ -561,7 +561,7 @@ public:
 							// }
 							radiance += ray.throughput * throughput_medium * Ls;
 						}
-					} 					
+					}
 				}
 
 
@@ -622,7 +622,7 @@ private:
 			if (shadow_info.hitObject->hasMedium())
 			{
 				transmittance *= shadow_info.hitObject->sampleTransparency(
-					shadow_ray.origin, shadow_ray(shadow_info.t1), sampler);
+					shadow_ray(shadow_info.t), shadow_ray(shadow_info.t1), sampler);
 			}
 		}
 		
@@ -633,81 +633,4 @@ private:
 private:
 	const uint32_t m_maxDepth;
 
-};
-
-class VolumeRayMarching : public Integrator
-{
-public:
-	VolumeRayMarching(float step) : m_stepLength(step) {}
-
-	Vec3f integrate(const Ray& ray_in, const Scene& scene,
-		Sampler& sampler) const override
-	{
-		Vec3f radiance(0);
-		Vec3f background_colour(0.0f);
-
-		IntersectInfo info;
-		if (scene.intersect(ray_in, info)) 
-		{
-			if (info.hitObject->hasMedium())
-			{
-				Vec3f ray_start = ray_in(info.t);
-				Vec3f ray_stop = ray_in(info.t1);
-				Vec3f step_vector = m_stepLength * ray_in.direction;
-				float ray_length = info.t1 - info.t;
-
-				float d = 2; // russian roulette "probability"
-				Vec3f position = ray_start;				
-				Vec3f transparency = 1.0;       // initialize transparency to 1
-				while (ray_length > 0) 
-				{					
-					Vec3f sample_pos = position + step_vector * sampler.getNext1D();
-
-				    // attenuate global transparency by sample transparency
-				    transparency *= info.hitObject->sampleTransparency(position, position + step_vector, sampler);
-
-					// russian roulette
-					if (transparency[0] < 0.001f && transparency[1] < 0.001f && transparency[2] < 0.001f) {
-						if (sampler.getNext1D() > 1.0 / d)
-							break;
-						else
-							transparency *= d;
-					}
-
-					// in-scatting					
-					//for (const auto& light : scene.getDeltaLights())
-					//{
-					//	Ray light_ray;
-					//	light_ray.origin = sample_pos;
-					//	light_ray.direction = /*normalize(light_positon - sample_pos)*/light;
-					//	float l_0, l_1;
-
-					//	Vec3f wi;
-					//	float tmax, pdf = 0.0f;
-					//	Vec3f L = light->sample(info, wi, pdf, tmax);
-
-					//	if (pdf == 0)
-					//		continue;
-
-					//	auto bias = 0.01f;
-					//	bool vis = !scene.occluded(Ray(info.surfaceInfo.position + info.surfaceInfo.ng * bias, wi), tmax - bias);
-					//	float cos = std::max(0.0f, dot(info.surfaceInfo.ng, wi));
-					//	Vec3f fr = info.hitObject->evaluateBxDF(ray_in.direction, wi, info.surfaceInfo);
-					//	radiance += vis * fr * L * cos / pdf;
-					//}
-
-					
-					ray_length -= m_stepLength;
-					position += step_vector;
-				}
-				Vec3f volume_color = Vec3f(0.5, 0.2, 0.3);
-				radiance = transparency * background_colour + (1.0 - transparency) * volume_color;
-			}
-		}
-
-		return radiance;
-	}
-protected:
-private:
-	float m_stepLength;
 };

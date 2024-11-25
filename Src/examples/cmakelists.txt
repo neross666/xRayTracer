@@ -11,6 +11,12 @@ link_libraries(
 	xRayTracer
 	)
 
+add_executable(NanoVDBConvert
+  "nanovdb_convert.cpp")
+target_compile_definitions(NanoVDBConvert PRIVATE NANOVDB_USE_OPENVDB)
+if(MSVC)
+    target_compile_options(NanoVDBConvert PRIVATE "/bigobj")
+endif()
 
 
 add_executable(cornellbox
@@ -24,10 +30,7 @@ add_executable(volume
   
 add_executable(VPT
   "vpt.cpp")
-
   
-add_executable(VolumeRayMarch
-  "vrm.cpp")
-
  add_executable(NEE
   "nee.cpp")
+  
